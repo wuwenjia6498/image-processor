@@ -222,3 +222,59 @@ WHERE to_tsvector('english', ai_description) @@ to_tsquery('english', 'warm & fa
 2. 检查SQL执行日志
 3. 验证环境变量配置
 4. 确认数据迁移完整性 
+
+## 手动解决方案
+
+由于终端出现问题，我建议您手动执行以下步骤：
+
+### 1. 打开PowerShell或命令提示符，导航到项目目录
+
+```powershell
+cd "G:\000-cursor学习\image-processor"
+```
+
+### 2. 从Git跟踪中移除敏感文件
+
+```powershell
+git rm --cached .env.local
+git commit -m "remove sensitive .env.local file from tracking"
+```
+
+### 3. 确保.gitignore正确配置
+
+检查 `.gitignore` 文件是否包含以下内容：
+```
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+```
+
+### 4. 验证敏感文件已被忽略
+
+```powershell
+git status
+```
+
+您应该看到 `.env.local` 文件不再被Git跟踪。
+
+### 5. 重新尝试推送
+
+```powershell
+git push origin main
+```
+
+## 为什么这能解决问题
+
+1. **GitHub安全检测**：GitHub会自动检测提交中的API密钥和敏感信息，可能会阻止推送
+2. **网络连接问题**：敏感信息可能导致Git客户端与GitHub服务器之间的连接被重置
+3. **文件大小问题**：包含大量敏感信息的文件可能导致推送超时
+
+## 预防措施
+
+1. **使用环境变量示例文件**：`.env.local.example` 已经存在，包含占位符而不是真实密钥
+2. **定期检查**：定期运行 `git status` 确保没有敏感文件被意外跟踪
+3. **使用GitHub Secrets**：对于生产环境，考虑使用GitHub Actions的Secrets功能
+
+请尝试执行上述步骤，这应该能解决推送问题。如果还有问题，请告诉我具体的错误信息。 
