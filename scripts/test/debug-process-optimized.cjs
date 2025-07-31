@@ -64,7 +64,7 @@ async function debugProcessOptimized() {
     }
     
     const packageData = JSON.parse(fs.readFileSync(packageJson, 'utf8'));
-    const requiredDeps = ['@supabase/supabase-js', '@pinecone-database/pinecone', '@xenova/transformers'];
+    const requiredDeps = ['@supabase/supabase-js', '@pinecone-database/pinecone', 'openai'];
     
     const missingDeps = requiredDeps.filter(dep => !packageData.dependencies[dep]);
     if (missingDeps.length > 0) {
@@ -105,8 +105,8 @@ async function debugProcessOptimized() {
       const { Pinecone } = require('@pinecone-database/pinecone');
       console.log('✅ @pinecone-database/pinecone 导入成功');
       
-      // 注意：@xenova/transformers 是ES模块，在CommonJS中可能无法直接导入
-      console.log('⚠️ @xenova/transformers 是ES模块，需要特殊处理');
+      const OpenAI = require('openai');
+      console.log('✅ openai 导入成功');
       
     } catch (error) {
       console.log(`❌ 模块导入失败: ${error.message}`);

@@ -55,9 +55,7 @@ image-processor/
 │   └── metadata.csv                # 主元数据文件
 ├── sql/                            # 🗄️ SQL脚本
 │   └── create_illustrations_optimized_table_simple.sql
-├── models/                         # 🤖 AI模型
-│   ├── clip-vit-base-patch32/      # CLIP模型
-│   └── vit-gpt2-image-captioning/  # 图像标题生成模型
+├── models/                         # 🤖 AI模型 (已清空，使用OpenAI API)
 ├── .env.local.example              # 环境变量示例
 ├── package.json                    # 项目配置
 └── README.md                       # 项目说明
@@ -100,4 +98,12 @@ image-processor/
 ### 测试和验证脚本
 - `npm run verify` - 系统完整性验证
 - `npm run test-openai` - 测试OpenAI API连接
-- `npm run network-check` - 网络连接检查 
+- `npm run network-check` - 网络连接检查
+
+## 🤖 AI模型说明
+
+项目现在完全依赖OpenAI API进行图像描述生成，不再使用本地AI模型文件。这样可以：
+- 减少项目占用空间
+- 简化部署和维护
+- 获得更好的AI描述质量
+- 避免本地模型文件的管理复杂性 

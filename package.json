@@ -27,7 +27,6 @@
     "test-chinese": "node scripts/test/test-chinese-filenames.js",
     "network-check": "node scripts/utils/network-setup.js",
     "verify": "node scripts/utils/verify-system.js",
-    "cleanup-models": "node scripts/utils/cleanup-models.cjs",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -36,7 +35,6 @@
   "dependencies": {
     "@pinecone-database/pinecone": "^3.0.3",
     "@supabase/supabase-js": "^2.45.4",
-    "@xenova/transformers": "^2.17.2",
     "csv-parse": "^5.5.6",
     "dotenv": "^16.4.5",
     "openai": "^4.67.1",

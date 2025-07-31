@@ -160,20 +160,23 @@ function provideSolutions(results) {
   console.log('     HTTPS_PROXY="http://your-proxy:port"');
   console.log('  2. 重新运行程序');
   
-  console.log('\n方案3: 预下载模型到本地');
-  console.log('  1. 使用 huggingface-cli 预下载:');
-  console.log('     npm install -g @huggingface/hub');
-  console.log('     huggingface-cli download Xenova/vit-gpt2-image-captioning');
-  console.log('     huggingface-cli download Xenova/clip-ViT-B-32');
+  console.log('\n方案3: 配置OpenAI API');
+  console.log('  1. 确保.env.local中包含OpenAI API密钥:');
+  console.log('     OPENAI_API_KEY="your-openai-api-key"');
+  console.log('  2. 验证API密钥有效性');
+  console.log('  3. 检查API配额和限制');
   
-  console.log('\n方案4: 使用专用下载工具');
-  console.log('  1. 使用 hfd 工具进行多线程下载');
-  console.log('  2. 参考: https://hf-mirror.com/');
+  console.log('\n方案4: 使用代理访问OpenAI');
+  console.log('  1. 如果无法直接访问OpenAI，配置代理:');
+  console.log('     HTTP_PROXY="http://your-proxy:port"');
+  console.log('     HTTPS_PROXY="http://your-proxy:port"');
+  console.log('  2. 重新运行程序');
   
   console.log('\n💡 如果以上方案都无效，可以考虑:');
   console.log('   - 使用 VPN 服务');
   console.log('   - 联系网络管理员');
   console.log('   - 使用移动热点测试');
+  console.log('   - 检查OpenAI API服务状态');
 }
 
 // 主函数

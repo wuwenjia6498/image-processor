@@ -131,30 +131,36 @@ async function verifyDataFiles() {
 }
 
 async function verifyModelFiles() {
-  console.log('\n🤖 5. AI模型文件检查...');
+  console.log('\n🤖 5. AI模型配置检查...');
   
-  const modelPaths = [
-    'models/vit-gpt2-image-captioning',
-    'models/clip-vit-base-patch32'
-  ];
-  
-  let modelsReady = true;
-  
-  for (const modelPath of modelPaths) {
-    const fullPath = path.join(process.cwd(), modelPath);
-    const configPath = path.join(fullPath, 'config.json');
+  // 检查OpenAI API配置
+  if (process.env.OPENAI_API_KEY) {
+    console.log('✅ OpenAI API密钥已配置');
     
-    if (fs.existsSync(configPath)) {
-      const files = fs.readdirSync(fullPath, { recursive: true });
-      const fileCount = files.filter(f => typeof f === 'string').length;
-      console.log(`✅ ${modelPath} (${fileCount} 个文件)`);
-    } else {
-      console.log(`❌ ${modelPath} 配置文件不存在`);
-      modelsReady = false;
+    // 测试OpenAI API连接
+    try {
+      const response = await fetch('https://api.openai.com/v1/models', {
+        headers: {
+          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+        }
+      });
+      
+      if (response.ok) {
+        console.log('✅ OpenAI API连接正常');
+        return true;
+      } else {
+        console.log(`❌ OpenAI API连接失败: ${response.statusText}`);
+        return false;
+      }
+    } catch (error) {
+      console.log(`❌ OpenAI API连接错误: ${error.message}`);
+      return false;
     }
+  } else {
+    console.log('❌ 未配置OpenAI API密钥');
+    console.log('💡 请在.env.local文件中添加OPENAI_API_KEY');
+    return false;
   }
-  
-  return modelsReady;
 }
 
 async function verifySystemIntegration() {
