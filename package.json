@@ -5,9 +5,32 @@
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
-    "build": "tsc",
+    "build": "vite build",
     "start": "node dist/index.js",
-    "dev": "tsx src/index.ts",
+    "dev": "vite",
+    "preview": "vite preview",
+    "process": "tsx src/process.ts",
+    "process-all": "tsx src/process-all-images.ts",
+    "process-optimized": "tsx src/process-all-images-optimized.ts",
+    "process-enhanced": "tsx src/process-all-images-enhanced.ts",
+    "test-enhanced": "node scripts/test-enhanced-features.cjs",
+    "test-db-update": "node scripts/test-database-update.cjs",
+    "batch-update-annotations": "node scripts/batch-update-annotations.cjs",
+    "check-ai-descriptions": "node scripts/check-ai-descriptions.cjs",
+    "test-enhanced-process": "node scripts/test-enhanced-process.cjs",
+    "update-ai-descriptions": "node scripts/update-ai-descriptions-only.cjs",
+    "test-openai": "node scripts/test-openai-api.cjs",
+    "test-third-party": "node scripts/test-third-party-api.cjs",
+    "migrate-optimized": "node scripts/migrate-to-optimized-table.cjs",
+    "test-optimized": "node scripts/test-optimized-table.cjs",
+    "test-image-url": "node scripts/test-image-url.cjs",
+    "upload-images": "node scripts/batch-upload-images.cjs",
+    "update-urls": "node scripts/update-database-urls.cjs",
+    "merge-csv": "tsx src/merge-csv-data.ts",
+    "test-chinese": "node scripts/test-chinese-filenames.js",
+    "network-check": "node scripts/network-setup.js",
+    "verify": "node scripts/verify-system.js",
+    "cleanup-models": "node scripts/cleanup-models.cjs",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -16,12 +39,20 @@
   "dependencies": {
     "@pinecone-database/pinecone": "^3.0.3",
     "@supabase/supabase-js": "^2.45.4",
+    "@xenova/transformers": "^2.17.2",
+    "csv-parse": "^5.5.6",
     "dotenv": "^16.4.5",
-    "csv-parse": "^5.5.6"
+    "openai": "^4.67.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
-    "typescript": "^5.6.3",
     "@types/node": "^22.9.0",
-    "tsx": "^4.19.2"
+    "@types/react": "^18.2.66",
+    "@types/react-dom": "^18.2.22",
+    "@vitejs/plugin-react": "^4.2.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "vite": "^5.2.0"
   }
 }

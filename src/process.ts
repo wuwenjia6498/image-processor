@@ -1,6 +1,6 @@
 import { Pinecone } from '@pinecone-database/pinecone';
 import { createClient } from '@supabase/supabase-js';
-// import { pipeline } from '@xenova/transformers';
+import { pipeline } from '@xenova/transformers';
 import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
@@ -9,9 +9,67 @@ import { parse } from 'csv-parse';
 // 配置 dotenv 以加载根目录下的 .env.local 文件
 dotenv.config({ path: '.env.local' });
 
+// 配置 Hugging Face 网络设置
+function configureHuggingFaceNetwork() {
+  console.log('配置 Hugging Face 网络设置...');
+  
+  // 设置镜像端点
+  if (process.env.HF_ENDPOINT) {
+    process.env.HF_ENDPOINT = process.env.HF_ENDPOINT;
+    console.log(`✓ 使用 HF 镜像: ${process.env.HF_ENDPOINT}`);
+  } else {
+    // 默认使用 HF-Mirror
+    process.env.HF_ENDPOINT = 'https://hf-mirror.com';
+    console.log('✓ 使用默认 HF-Mirror: https://hf-mirror.com');
+  }
+  
+  // 设置代理（如果配置了）
+  if (process.env.HTTP_PROXY) {
+    console.log(`✓ 使用 HTTP 代理: ${process.env.HTTP_PROXY}`);
+  }
+  if (process.env.HTTPS_PROXY) {
+    console.log(`✓ 使用 HTTPS 代理: ${process.env.HTTPS_PROXY}`);
+  }
+  
+  // 设置 HF Token（如果配置了）
+  if (process.env.HF_TOKEN) {
+    console.log('✓ 检测到 Hugging Face Token');
+  }
+  
+  // 设置超时和重试参数
+  process.env.HF_HUB_DOWNLOAD_TIMEOUT = '300'; // 5分钟超时
+  
+  // 设置本地优先模式
+  process.env.TRANSFORMERS_OFFLINE = '0'; // 允许网络访问但优先本地
+  process.env.HF_HUB_OFFLINE = '0'; // 允许网络访问但优先本地
+  
+  console.log('✓ 网络配置完成');
+}
+
+// 检查本地模型是否存在
+function checkLocalModel(modelPath: string): boolean {
+  const configPath = path.join(modelPath, 'config.json');
+  return fs.existsSync(configPath);
+}
+
+// 获取最佳可用的模型路径
+function getBestModelPath(modelName: string, localPath: string): string {
+  if (checkLocalModel(localPath)) {
+    console.log(`✓ 检测到本地模型: ${localPath}`);
+    // 使用相对路径，避免Windows路径问题
+    return localPath.replace(process.cwd() + path.sep, './');
+  } else {
+    console.log(`→ 本地模型不存在，使用在线模型: ${modelName}`);
+    return modelName;
+  }
+}
+
 async function main() {
   try {
     console.log('开始初始化客户端...');
+    
+    // 首先配置网络设置
+    configureHuggingFaceNetwork();
 
     // 检查必要的环境变量
     const requiredEnvVars = [
@@ -47,19 +105,76 @@ async function main() {
 
     console.log('开始加载AI模型...');
     
-    // 模拟加载图像描述模型（暂时注释掉实际加载）
-    console.log('正在加载图像描述模型 (Xenova/vit-gpt2-image-captioning)...');
-    // const captioner = await pipeline('image-to-text', 'Xenova/vit-gpt2-image-captioning');
-    const captioner = null; // 模拟变量
-    console.log('✓ 图像描述模型加载成功 (模拟)');
+    let captioner = null;
+    let embedder = null;
+    
+    // 定义模型路径
+    const captionerModelName = 'Xenova/vit-gpt2-image-captioning';
+    const embedderModelName = 'Xenova/clip-vit-base-patch32';
+    const captionerLocalPath = path.join(process.cwd(), 'models', 'vit-gpt2-image-captioning');
+    const embedderLocalPath = path.join(process.cwd(), 'models', 'clip-vit-base-patch32');
+    
+    try {
+      // 加载图像描述模型
+      console.log('正在加载图像描述模型...');
+      const captionerPath = getBestModelPath(captionerModelName, captionerLocalPath);
+      console.log('  → 这可能需要几分钟时间，请耐心等待...');
+      
+      captioner = await pipeline('image-to-text', captionerPath, {
+        cache_dir: path.join(process.cwd(), 'models', '.cache'),
+        progress_callback: (progress: any) => {
+          if (progress.status === 'downloading') {
+            console.log(`  → 下载进度: ${progress.name} - ${Math.round(progress.progress || 0)}%`);
+          } else if (progress.status === 'loading') {
+            console.log(`  → 加载模型: ${progress.name}`);
+          }
+        }
+      });
+      console.log('✓ 图像描述模型加载成功');
+    } catch (error) {
+      console.log('⚠️ 图像描述模型加载失败，使用模拟模式');
+      console.log('  原因:', error instanceof Error ? error.message : '未知错误');
+      console.log('  建议: 检查网络连接或尝试重新运行程序');
+      captioner = null;
+    }
 
-    // 模拟加载特征提取模型（暂时注释掉实际加载）
-    console.log('正在加载特征提取模型 (Xenova/clip-ViT-B-32)...');
-    // const embedder = await pipeline('feature-extraction', 'Xenova/clip-ViT-B-32');
-    const embedder = null; // 模拟变量
-    console.log('✓ 特征提取模型加载成功 (模拟)');
+    try {
+      // 加载特征提取模型
+      console.log('正在加载特征提取模型...');
+      const embedderPath = getBestModelPath(embedderModelName, embedderLocalPath);
+      console.log('  → 这可能需要几分钟时间，请耐心等待...');
+      
+      embedder = await pipeline('feature-extraction', embedderPath, {
+        cache_dir: path.join(process.cwd(), 'models', '.cache'),
+        progress_callback: (progress: any) => {
+          if (progress.status === 'downloading') {
+            console.log(`  → 下载进度: ${progress.name} - ${Math.round(progress.progress || 0)}%`);
+          } else if (progress.status === 'loading') {
+            console.log(`  → 加载模型: ${progress.name}`);
+          }
+        }
+      });
+      console.log('✓ 特征提取模型加载成功');
+    } catch (error) {
+      console.log('⚠️ 特征提取模型加载失败，使用模拟模式');
+      console.log('  原因:', error instanceof Error ? error.message : '未知错误');
+      console.log('  建议: 检查网络连接或尝试重新运行程序');
+      embedder = null;
+    }
 
-    console.log('✓ 所有AI模型加载完成 (模拟模式)');
+    if (captioner && embedder) {
+      console.log('✓ 所有AI模型加载完成');
+    } else if (captioner || embedder) {
+      console.log('⚠️ 部分AI模型加载成功，其余使用模拟模式');
+    } else {
+      console.log('⚠️ 所有AI模型加载失败，使用完全模拟模式');
+      console.log('💡 网络问题解决建议:');
+      console.log('   1. 检查 .env.local 中的 HF_ENDPOINT 配置');
+      console.log('   2. 确认网络连接正常');
+      console.log('   3. 尝试配置代理服务器');
+      console.log('   4. 考虑下载模型到本地');
+      console.log('   5. 运行 npm run network-check 进行诊断');
+    }
 
     // 读取和处理 data/metadata.csv
     console.log('开始读取 data/metadata.csv...');
@@ -106,7 +221,7 @@ async function main() {
         console.log(`  书名: ${record.book_title}`);
         
         // 构建图片文件路径
-        const imagePath = path.join(process.cwd(), 'data', record.filename);
+        const imagePath = path.join(process.cwd(), 'data', 'images', record.filename);
         
         // 检查图片文件是否存在
         if (!fs.existsSync(imagePath)) {
@@ -117,9 +232,13 @@ async function main() {
         console.log('  → 生成AI描述...');
         let aiDescription = '';
         if (captioner) {
-          // const result = await captioner(imagePath);
-          // aiDescription = result[0].generated_text;
-          aiDescription = `AI生成的${record.book_title}描述 (模拟)`; // 模拟描述
+          const result = await captioner(imagePath);
+          // 根据transformers.js文档，image-to-text返回格式为 [{generated_text: string}]
+          if (Array.isArray(result) && result.length > 0) {
+            aiDescription = (result[0] as any).generated_text || `AI生成的${record.book_title}描述`;
+          } else {
+            aiDescription = `AI生成的${record.book_title}描述`;
+          }
         } else {
           aiDescription = `AI生成的${record.book_title}描述 (模拟)`; // 模拟描述
         }
@@ -129,13 +248,11 @@ async function main() {
         console.log('  → 生成图像向量...');
         let imageVector: number[] = [];
         if (embedder) {
-          // const embedding = await embedder(imagePath, { pooling: 'mean', normalize: true });
-          // imageVector = Array.from(embedding.data);
-          // 模拟向量（512维）
-          imageVector = Array.from({ length: 512 }, () => Math.random() * 2 - 1);
+          const embedding = await embedder(imagePath, { pooling: 'mean', normalize: true });
+          imageVector = Array.from(embedding.data);
         } else {
-          // 模拟向量（512维）
-          imageVector = Array.from({ length: 512 }, () => Math.random() * 2 - 1);
+          // 模拟向量（1024维，匹配Pinecone索引）
+          imageVector = Array.from({ length: 1024 }, () => Math.random() * 2 - 1);
         }
         console.log(`  ✓ 图像向量生成完成，维度: ${imageVector.length}`);
         
