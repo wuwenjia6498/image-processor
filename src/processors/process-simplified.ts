@@ -47,13 +47,13 @@ async function main() {
     const index = pinecone.index(indexName);
     console.log(`✓ 连接到 Pinecone 索引: ${indexName}`);
 
-    console.log('✓ 使用OpenAI API + Serper搜索进行图像处理');
+    console.log('✓ 使用OpenAI API + Serper搜索进行图像处理（简化版）');
 
-    // 读取和处理 data/metadata.csv
-    console.log('开始读取 data/metadata.csv...');
+    // 读取和处理 data/metadata_simplified.csv
+    console.log('开始读取 data/metadata_simplified.csv...');
     
-    // 定义 metadata.csv 的文件路径（在data文件夹下）
-    const csvFilePath = path.join(process.cwd(), 'data', 'metadata.csv');
+    // 定义 metadata_simplified.csv 的文件路径
+    const csvFilePath = path.join(process.cwd(), 'data', 'metadata_simplified.csv');
     
     // 检查文件是否存在
     if (!fs.existsSync(csvFilePath)) {
@@ -198,27 +198,15 @@ async function main() {
         const publicUrl = urlData.publicUrl;
         console.log(`  ✓ 获取公开URL成功: ${publicUrl}`);
         
-        // 6. 准备Pinecone元数据
+        // 6. 准备Pinecone元数据（简化版）
         console.log('  → 准备元数据...');
         const pineconeMetadata = {
           filename: record.filename,
           book_title: record.book_title,
-          style_tags: record.style_tags?.split(',').map((tag: string) => tag.trim()) || [],
-          mood_tags: record.mood_tags?.split(',').map((tag: string) => tag.trim()) || [],
-          composition_tags: record.composition_tags?.split(',').map((tag: string) => tag.trim()) || [],
-          scene_tags: record.scene_tags?.split(',').map((tag: string) => tag.trim()) || [],
-          season_tags: record.season_tags?.split(',').map((tag: string) => tag.trim()) || [],
-          content_tags: record.content_tags?.split(',').map((tag: string) => tag.trim()) || [],
-          emotion_tags: record.emotion_tags?.split(',').map((tag: string) => tag.trim()) || [],
-          theme_tags: record.theme_tags?.split(',').map((tag: string) => tag.trim()) || [],
-          tone_tags: record.tone_tags?.split(',').map((tag: string) => tag.trim()) || [],
-          text_type_fit: record.text_type_fit,
-          age_orientation: record.age_orientation,
-          book_theme_summary: record.book_theme_summary,
-          book_keywords: record.book_keywords?.split(',').map((keyword: string) => keyword.trim()) || [],
           ai_description: aiDescription,
           image_url: publicUrl,
-          search_results_count: searchResults.length
+          search_results_count: searchResults.length,
+          processed_at: new Date().toISOString()
         };
         console.log(`  ✓ 元数据准备完成`);
         
@@ -231,7 +219,7 @@ async function main() {
         }]);
         console.log(`  ✓ Pinecone写入成功`);
         
-        // 8. 备份到Supabase PostgreSQL
+        // 8. 备份到Supabase PostgreSQL（简化版）
         console.log('  → 备份到Supabase数据库...');
         const { data: dbData, error: dbError } = await supabase
           .from('illustrations')
@@ -239,19 +227,6 @@ async function main() {
             id: record.filename.replace(/\.[^/.]+$/, ""),
             filename: record.filename,
             book_title: record.book_title,
-            style_tags: pineconeMetadata.style_tags,
-            mood_tags: pineconeMetadata.mood_tags,
-            composition_tags: pineconeMetadata.composition_tags,
-            scene_tags: pineconeMetadata.scene_tags,
-            season_tags: pineconeMetadata.season_tags,
-            content_tags: pineconeMetadata.content_tags,
-            emotion_tags: pineconeMetadata.emotion_tags,
-            theme_tags: pineconeMetadata.theme_tags,
-            tone_tags: pineconeMetadata.tone_tags,
-            text_type_fit: record.text_type_fit,
-            age_orientation: record.age_orientation,
-            book_theme_summary: record.book_theme_summary,
-            book_keywords: pineconeMetadata.book_keywords,
             ai_description: aiDescription,
             image_url: publicUrl,
             vector_embedding: imageVector,

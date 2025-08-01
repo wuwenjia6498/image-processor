@@ -10,6 +10,7 @@
     "dev": "vite",
     "preview": "vite preview",
     "process": "tsx src/processors/process.ts",
+    "process-simplified": "tsx src/processors/process-simplified.ts",
     "process-enhanced": "tsx src/processors/process-all-images-enhanced.ts",
     "test-enhanced": "node scripts/test/test-enhanced-features.cjs",
     "test-db-update": "node scripts/test/test-database-update.cjs",
@@ -27,6 +28,7 @@
     "test-chinese": "node scripts/test/test-chinese-filenames.js",
     "network-check": "node scripts/utils/network-setup.js",
     "verify": "node scripts/utils/verify-system.js",
+    "test-search": "tsx src/test-search.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
