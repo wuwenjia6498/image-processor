@@ -107,4 +107,7 @@ data/images/
 !public/*.jpg
 !public/*.png
 !public/*.gif
-!public/*.webp 
+!public/*.webp
+
+# 忽略整个data目录（包含CSV文件和图片）
+data/ 
