@@ -15,7 +15,7 @@ interface OptimizedWorkspaceProps {
 }
 
 const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
-  // 图片上传相关状态
+  // 插图上传相关状态
   const [processedImages, setProcessedImages] = useState<ProcessedImage[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -64,7 +64,7 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
     });
   }, []);
 
-  // 切换图片展开状态
+  // 切换插图展开状态
   const toggleImageExpanded = useCallback((matchId: string) => {
     setExpandedImages(prev => {
       const newSet = new Set(prev);
@@ -106,13 +106,13 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
     };
   };
 
-  // 图片上传处理
+  // 插图上传处理
   const handleImagesUploaded = useCallback(async (images: File[]) => {
-    console.log('上传的图片:', images);
+    console.log('上传的插图:', images);
     
     setIsProcessing(true);
     setProgress(0);
-    setCurrentStatus('准备处理图片...');
+    setCurrentStatus('准备处理插图...');
     
     // 初始化处理详情
     setProcessingDetails({
@@ -195,7 +195,7 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
       }));
       
     } catch (error) {
-      console.error('处理图片时出错:', error);
+      console.error('处理插图时出错:', error);
       const errorMessage = error instanceof Error ? error.message : '未知错误';
       
       // 根据错误类型提供更具体的提示
@@ -248,7 +248,7 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
     }
   }, [textContent]);
 
-  // 下载图片
+  // 下载插图
   const handleDownloadImage = useCallback(async (imageUrl: string, filename: string) => {
     try {
       const response = await fetch(imageUrl);
@@ -262,7 +262,7 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('下载图片失败:', error);
+      console.error('下载插图失败:', error);
     }
   }, []);
 
@@ -276,19 +276,19 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
       logicPoints.push({
         icon: '🎯',
         title: `高度匹配 (${similarity}%)`,
-        detail: `相似度评分超过80%，表明图片内容与您的文案在语义层面高度契合。这种匹配度通常意味着图片的主要元素、情感色彩或场景设定与文案描述的核心概念非常接近。`
+        detail: `相似度评分超过80%，表明插图内容与您的文案在语义层面高度契合。这种匹配度通常意味着插图的主要元素、情感色彩或场景设定与文案描述的核心概念非常接近。`
       });
     } else if (match.similarity > 0.6) {
       logicPoints.push({
         icon: '✅',
         title: `良好匹配 (${similarity}%)`,
-        detail: `相似度评分在60-80%区间，说明图片内容与文案具有较强的关联性。虽然不是完美匹配，但在主题、风格或情感表达上存在明显的共同点，能够有效支撑文案内容。`
+        detail: `相似度评分在60-80%区间，说明插图内容与文案具有较强的关联性。虽然不是完美匹配，但在主题、风格或情感表达上存在明显的共同点，能够有效支撑文案内容。`
       });
     } else if (match.similarity > 0.4) {
       logicPoints.push({
         icon: '⚠️',
         title: `一般匹配 (${similarity}%)`,
-        detail: `相似度评分在40-60%区间，表明图片与文案存在一定的相关性。可能在某些特定角度（如情感基调、场景氛围或部分关键元素）与文案产生共鸣，但整体匹配度有待提升。`
+        detail: `相似度评分在40-60%区间，表明插图与文案存在一定的相关性。可能在某些特定角度（如情感基调、场景氛围或部分关键元素）与文案产生共鸣，但整体匹配度有待提升。`
       });
     } else {
       logicPoints.push({
@@ -309,13 +309,13 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
       logicPoints.push({
         icon: '🔍',
         title: `强关键词匹配`,
-        detail: `发现 ${commonWords.length} 个共同关键词：${commonWords.slice(0, 5).join('、')}${commonWords.length > 5 ? '等' : ''}。这些词汇的重合表明文案与图片在具体描述对象、场景要素或情感表达上存在直接的语言层面对应关系，增强了匹配的可信度。`
+        detail: `发现 ${commonWords.length} 个共同关键词：${commonWords.slice(0, 5).join('、')}${commonWords.length > 5 ? '等' : ''}。这些词汇的重合表明文案与插图在具体描述对象、场景要素或情感表达上存在直接的语言层面对应关系，增强了匹配的可信度。`
       });
     } else if (commonWords.length > 0) {
       logicPoints.push({
         icon: '🔍',
         title: `关键词呼应`,
-        detail: `识别出 ${commonWords.length} 个共同关键词：${commonWords.join('、')}。虽然词汇重合度不高，但这些关键词的出现暗示了文案与图片在某些核心概念上的一致性，为匹配提供了基础的语言学支撑。`
+        detail: `识别出 ${commonWords.length} 个共同关键词：${commonWords.join('、')}。虽然词汇重合度不高，但这些关键词的出现暗示了文案与插图在某些核心概念上的一致性，为匹配提供了基础的语言学支撑。`
       });
     } else {
       // 进行更深层的语义分析
@@ -336,7 +336,7 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
       logicPoints.push({
         icon: '📚',
         title: `主题来源分析`,
-        detail: `图片来源于《${match.bookTitle}》。${bookThemeAnalysis} 书籍作为图片的原始语境，为匹配提供了主题层面的背景支撑，有助于理解图片的深层含义和适用场景。`
+        detail: `插图来源于《${match.bookTitle}》。${bookThemeAnalysis} 书籍作为插图的原始语境，为匹配提供了主题层面的背景支撑，有助于理解插图的深层含义和适用场景。`
       });
     }
 
@@ -354,7 +354,7 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
       logicPoints.push({
         icon: '📝',
         title: `内容丰富度分析`,
-        detail: `图片描述长度为 ${match.description.length} 字，${contentAnalysis} 详细的描述为匹配算法提供了更多维度的分析素材，提高了匹配精度。`
+        detail: `插图描述长度为 ${match.description.length} 字，${contentAnalysis} 详细的描述为匹配算法提供了更多维度的分析素材，提高了匹配精度。`
       });
     }
 
@@ -387,7 +387,7 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
     } else if (educationKeywords.some(keyword => lowerText.includes(keyword) || lowerTitle.includes(keyword))) {
       return '该书籍注重教育启发，与文案的知识传递或成长主题相契合。';
     } else {
-      return '该书籍为图片提供了特定的文化背景和叙事语境，虽然主题关联度需要进一步评估，但原始出处的完整性有助于理解图片的创作意图。';
+      return '该书籍为插图提供了特定的文化背景和叙事语境，虽然主题关联度需要进一步评估，但原始出处的完整性有助于理解插图的创作意图。';
     }
   };
 
@@ -397,9 +397,9 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
     const descComplexity = description.split(' ').length;
     
     if (similarity > 0.7) {
-      return `系统使用高维向量空间模型将文案和图片描述转换为数值向量，通过余弦相似度计算得出 ${(similarity * 100).toFixed(1)}% 的匹配度。这一高分表明两个文本在语义向量空间中距离较近，意味着它们在抽象语义层面具有相似的"语义指纹"。算法考虑了词汇语义、句法结构和语境信息的综合影响。`;
+      return `系统使用高维向量空间模型将文案和插图描述转换为数值向量，通过余弦相似度计算得出 ${(similarity * 100).toFixed(1)}% 的匹配度。这一高分表明两个文本在语义向量空间中距离较近，意味着它们在抽象语义层面具有相似的"语义指纹"。算法考虑了词汇语义、句法结构和语境信息的综合影响。`;
     } else if (similarity > 0.4) {
-      return `通过深度学习模型将文本转换为 ${textComplexity > 20 ? '高维' : '标准'}语义向量，计算得出 ${(similarity * 100).toFixed(1)}% 的相似度。这个分数反映了文案与图片描述在语义空间中的相对位置关系。虽然不是完美匹配，但算法识别出了一定程度的语义关联，可能涉及同义词替换、概念层次关系或上下文语境的相似性。`;
+      return `通过深度学习模型将文本转换为 ${textComplexity > 20 ? '高维' : '标准'}语义向量，计算得出 ${(similarity * 100).toFixed(1)}% 的相似度。这个分数反映了文案与插图描述在语义空间中的相对位置关系。虽然不是完美匹配，但算法识别出了一定程度的语义关联，可能涉及同义词替换、概念层次关系或上下文语境的相似性。`;
     } else {
       return `基于transformer架构的语言模型对文本进行深度语义编码，生成的向量表示捕获了文本的深层语义特征。${(similarity * 100).toFixed(1)}% 的相似度虽然不高，但仍表明在高维语义空间中存在可测量的关联性。这种关联可能源于抽象概念的相似性、隐含语义的呼应，或是在特定语义维度上的局部匹配。`;
     }
@@ -433,11 +433,11 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
     const dynamicCount = dynamicWords.filter(word => textLower.includes(word) || descLower.includes(word)).length;
     
     if (positiveCount > 0) {
-      return `文案与图片描述都传达出积极正面的情感色彩，共同营造出温馨愉悦的氛围。这种情感基调的一致性增强了内容的协调性和感染力。`;
+      return `文案与插图描述都传达出积极正面的情感色彩，共同营造出温馨愉悦的氛围。这种情感基调的一致性增强了内容的协调性和感染力。`;
     } else if (peacefulCount > 0) {
       return `两者都体现出宁静祥和的情感特质，适合营造平静舒缓的阅读体验。这种情感共鸣有助于创造统一的感受基调。`;
     } else if (dynamicCount > 0) {
-      return `文案与图片都展现出活跃生动的特征，能够传递积极向上的能量和动感体验。`;
+      return `文案与插图都展现出活跃生动的特征，能够传递积极向上的能量和动感体验。`;
     } else {
       return null; // 如果没有明显的情感色彩匹配，就不显示这一项
     }
@@ -446,8 +446,8 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
   // 获取当前任务状态信息
   const getCurrentTaskInfo = () => {
     if (isProcessing) {
-      // 正在处理图片时，显示当前任务信息
-      return `正在处理图片 (${processingDetails.totalCount} 张)...`;
+      // 正在处理插图时，显示当前任务信息
+      return `正在处理插图 (${processingDetails.totalCount} 张)...`;
     } else if (isMatching) {
       // 正在匹配文案时，显示匹配状态
       return '正在分析文案语义并匹配最佳插图...';
@@ -458,9 +458,9 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
       const total = processingDetails.completedFiles.length;
       
       if (errorCount === 0) {
-        return `处理完成！成功处理 ${successCount} 张图片`;
+        return `处理完成！成功处理 ${successCount} 张插图`;
       } else if (successCount === 0) {
-        return `处理失败！${errorCount} 张图片处理失败`;
+        return `处理失败！${errorCount} 张插图处理失败`;
       } else {
         return `部分完成：${successCount} 张成功，${errorCount} 张失败`;
       }
@@ -468,7 +468,7 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
       // 兼容旧的状态显示
       const successCount = processedImages.filter(img => img.status === 'success').length;
       const successRate = ((successCount / processedImages.length) * 100).toFixed(1);
-      return `已处理 ${processedImages.length} 张图片，成功率 ${successRate}%`;
+      return `已处理 ${processedImages.length} 张插图，成功率 ${successRate}%`;
     }
     return null;
   };
@@ -505,7 +505,7 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
               <img src="/logo-1.jpg" alt="Logo" className="h-12 w-12 rounded-lg" />
               <div>
                 <h1 className="text-2xl font-bold text-slate-900">文图匹配工作台</h1>
-                <p className="text-sm text-slate-600">图片上传及与文图智能匹配系统</p>
+                <p className="text-sm text-slate-600">插图上传及与文图智能匹配系统</p>
               </div>
             </div>
           </div>
@@ -555,7 +555,7 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
             </TabsTrigger>
             <TabsTrigger value="upload" className="flex items-center space-x-2">
               <Upload className="h-4 w-4" />
-              <span>图片处理</span>
+              <span>插图处理</span>
             </TabsTrigger>
             <TabsTrigger value="gallery" className="flex items-center space-x-2">
               <Image className="h-4 w-4" />
@@ -721,7 +721,7 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
                                 {/* AI描述 */}
                                 <div className="space-y-3">
                                   <div className="flex items-center justify-between">
-                                    <h5 className="font-medium text-slate-900">图片描述</h5>
+                                    <h5 className="font-medium text-slate-900">插图描述</h5>
                                     <Button
                                       variant="ghost"
                                       size="sm"
@@ -799,9 +799,9 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
             <div className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>上传图片</CardTitle>
+                  <CardTitle>上传插图</CardTitle>
                   <CardDescription>
-                    选择要处理的图片文件，系统将自动提取特征并生成描述
+                    选择要处理的插图文件，系统将自动提取特征并生成描述
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -818,7 +818,7 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
                       <span>处理结果汇总</span>
                     </CardTitle>
                     <CardDescription>
-                      共处理 {processingDetails.completedFiles.length} 张图片
+                      共处理 {processingDetails.completedFiles.length} 张插图
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -900,7 +900,7 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
                       <span>实时处理状态</span>
                     </CardTitle>
                     <CardDescription>
-                      正在处理第 {processingDetails.currentIndex} / {processingDetails.totalCount} 张图片
+                      正在处理第 {processingDetails.currentIndex} / {processingDetails.totalCount} 张插图
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -999,7 +999,7 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <p className="text-sm text-slate-600">
-              © 2025 文图匹配工作台. 图片上传及与文图智能匹配系统
+              © 2025 文图匹配工作台. 插图上传及与文图智能匹配系统
             </p>
             <div className="flex items-center space-x-4 text-sm text-slate-600">
               <img src="/logo-0.jpg" alt="Logo" className="h-12 w-auto" />

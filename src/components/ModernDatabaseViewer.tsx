@@ -99,17 +99,17 @@ const ModernDatabaseViewer: React.FC<ModernDatabaseViewerProps> = ({ isOpen, onC
     });
   };
 
-  // 处理图片放大
+  // 处理插图放大
   const handleImageClick = (url: string, filename: string) => {
     setSelectedImage({ url, filename });
   };
 
-  // 关闭图片放大
+  // 关闭插图放大
   const closeImageModal = () => {
     setSelectedImage(null);
   };
 
-  // 下载图片
+  // 下载插图
   const downloadImage = async (url: string, filename: string) => {
     try {
       const response = await fetch(url);
@@ -123,7 +123,7 @@ const ModernDatabaseViewer: React.FC<ModernDatabaseViewerProps> = ({ isOpen, onC
       document.body.removeChild(link);
       window.URL.revokeObjectURL(downloadUrl);
     } catch (error) {
-      console.error('下载图片失败:', error);
+      console.error('下载插图失败:', error);
     }
   };
 
@@ -276,7 +276,7 @@ const ModernDatabaseViewer: React.FC<ModernDatabaseViewerProps> = ({ isOpen, onC
                           </div>
                         </div>
 
-                        {/* 图片预览 */}
+                        {/* 插图预览 */}
                         {record.image_url && (
                           <div className="relative w-32 h-24 bg-gray-100 rounded-lg overflow-hidden group">
                             <img
@@ -286,11 +286,11 @@ const ModernDatabaseViewer: React.FC<ModernDatabaseViewerProps> = ({ isOpen, onC
                               loading="lazy"
                               onClick={() => handleImageClick(record.image_url!, record.filename)}
                               onError={(e) => {
-                                // 图片加载失败时隐藏图片
+                                // 插图加载失败时隐藏插图
                                 (e.target as HTMLImageElement).style.display = 'none';
                               }}
                             />
-                            {/* 图片操作按钮 */}
+                            {/* 插图操作按钮 */}
                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
                               <div className="flex space-x-2">
                                 <Button
@@ -361,7 +361,7 @@ const ModernDatabaseViewer: React.FC<ModernDatabaseViewerProps> = ({ isOpen, onC
         </CardContent>
       </Card>
 
-      {/* 图片放大模态框 */}
+      {/* 插图放大模态框 */}
       {selectedImage && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
           <div className="relative max-w-4xl max-h-[90vh] bg-white rounded-lg overflow-hidden">
@@ -392,7 +392,7 @@ const ModernDatabaseViewer: React.FC<ModernDatabaseViewerProps> = ({ isOpen, onC
               </div>
             </div>
             
-            {/* 图片内容 */}
+            {/* 插图内容 */}
             <div className="p-4">
               <img
                 src={selectedImage.url}

@@ -103,13 +103,13 @@ const ModernImageUploader: React.FC<ModernImageUploaderProps> = ({ onImagesUploa
           
           <div className="space-y-2">
             <p className="text-lg font-medium text-slate-900">
-              {isDragOver ? "释放文件以上传" : "拖拽图片到此处"}
+              {isDragOver ? "释放文件以上传" : "拖拽插图到此处"}
             </p>
             <p className="text-sm text-slate-600">
               或者 <span className="text-blue-600 font-medium">点击选择文件</span>
             </p>
             <p className="text-xs text-slate-500">
-              支持 JPG、PNG、GIF 等图片格式，最大 10MB
+              支持 JPG、PNG、GIF 等插图格式，最大 10MB
             </p>
           </div>
         </div>

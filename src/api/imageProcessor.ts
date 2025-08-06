@@ -2,7 +2,7 @@ import { supabase } from './supabaseClient';
 import { generateImageDescription } from '../services/frontend-ai-service';
 import { imageDescriptionToVector } from '../services/unified-embedding';
 
-// 处理后的图片结果接口
+// 处理后的插图结果接口
 export interface ProcessedImage {
   id: string;
   filename: string;
@@ -47,7 +47,7 @@ function validateFile(file: File): { isValid: boolean; error?: string } {
   if (file.size > maxSize) {
     return { 
       isValid: false, 
-      error: `文件过大 (${(file.size / 1024 / 1024).toFixed(1)}MB)，请选择小于10MB的图片` 
+      error: `文件过大 (${(file.size / 1024 / 1024).toFixed(1)}MB)，请选择小于10MB的插图` 
     };
   }
   
@@ -149,7 +149,7 @@ export const uploadImages = async (
   files: File[], 
   onProgress?: (progress: { current: number; total: number; currentFile: string; status: 'processing' | 'completed' | 'error'; error?: string }) => void
 ): Promise<ProcessedImage[]> => {
-  console.log('开始处理图片:', files);
+  console.log('开始处理插图:', files);
   const results: ProcessedImage[] = [];
   
   for (let i = 0; i < files.length; i++) {
@@ -159,7 +159,7 @@ export const uploadImages = async (
     const theme = matchBookTheme(bookTitle);
     const id = generateAsciiId(originalFilename);
     
-    console.log(`\n📸 处理第 ${i + 1}/${files.length} 张图片: ${originalFilename}`);
+    console.log(`\n📸 处理第 ${i + 1}/${files.length} 张插图: ${originalFilename}`);
     
     // 通知开始处理当前文件
     onProgress?.({
@@ -203,8 +203,8 @@ export const uploadImages = async (
       const safeStorageName = generateSafeStorageName(originalFilename);
       console.log(`🔄 存储名称: ${safeStorageName}`);
       
-      // 2. 上传图片到Supabase存储（带重试）
-      console.log('⬆️ 开始上传图片...');
+      // 2. 上传插图到Supabase存储（带重试）
+      console.log('⬆️ 开始上传插图...');
       const uploadResult = await retryOperation(async () => {
         const { data, error } = await supabase.storage
           .from('illustrations')
@@ -220,9 +220,9 @@ export const uploadImages = async (
         return data;
       }, 3, 2000); // 最多重试3次，初始延迟2秒
       
-      console.log('✅ 图片上传成功');
+      console.log('✅ 插图上传成功');
       
-      // 3. 获取图片的公开URL
+      // 3. 获取插图的公开URL
       const { data: urlData } = supabase.storage
         .from('illustrations')
         .getPublicUrl(`images/${safeStorageName}`);
@@ -294,7 +294,7 @@ export const uploadImages = async (
         status: 'completed'
       });
       
-      console.log(`🎉 图片 ${originalFilename} 处理完成`);
+      console.log(`🎉 插图 ${originalFilename} 处理完成`);
       
       // 添加短暂延迟，避免请求过于频繁
       if (i < files.length - 1) {
@@ -302,7 +302,7 @@ export const uploadImages = async (
       }
       
     } catch (error) {
-      console.error(`❌ 处理图片 ${originalFilename} 失败:`, error);
+      console.error(`❌ 处理插图 ${originalFilename} 失败:`, error);
       
       // 如果是网络错误，尝试清理可能已上传的文件
       if (error instanceof Error && error.message.includes('上传失败')) {
@@ -345,10 +345,10 @@ export const uploadImages = async (
   return results;
 };
 
-// 处理已上传的图片
+// 处理已上传的插图
 export const processImages = async (imageIds: string[]): Promise<void> => {
   // 实现批量处理逻辑
-  console.log('批量处理图片:', imageIds);
+  console.log('批量处理插图:', imageIds);
 };
 
 // 获取处理状态
