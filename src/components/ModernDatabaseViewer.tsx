@@ -20,21 +20,7 @@ const ModernDatabaseViewer: React.FC<ModernDatabaseViewerProps> = ({ isOpen, onC
   const [pageSize] = useState(20); // 每页显示20条记录
   const [pagination, setPagination] = useState<PaginatedResult<DatabaseRecord> | null>(null);
   const [stats, setStats] = useState<{ total: number; recentCount: number } | null>(null);
-  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
-
-  // 防抖搜索
-  const debouncedSearch = useCallback((term: string) => {
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
-    }
-    
-    const timeout = setTimeout(() => {
-      setCurrentPage(1); // 重置到第一页
-      loadDatabaseRecords(1, term);
-    }, 500);
-    
-    setSearchTimeout(timeout);
-  }, [searchTimeout]);
+  const [searchInput, setSearchInput] = useState(''); // 新增：搜索输入框的值
 
   // 加载数据库记录
   const loadDatabaseRecords = useCallback(async (page: number = 1, search: string = searchTerm) => {
@@ -68,11 +54,28 @@ const ModernDatabaseViewer: React.FC<ModernDatabaseViewerProps> = ({ isOpen, onC
     }
   }, [searchTerm, pageSize]);
 
+  // 执行搜索
+  const performSearch = useCallback(() => {
+    setSearchTerm(searchInput);
+    setCurrentPage(1); // 重置到第一页
+    loadDatabaseRecords(1, searchInput);
+  }, [searchInput, loadDatabaseRecords]);
+
   // 处理搜索输入
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setSearchTerm(value);
-    debouncedSearch(value);
+    setSearchInput(e.target.value);
+  };
+
+  // 处理搜索按钮点击
+  const handleSearchClick = () => {
+    performSearch();
+  };
+
+  // 处理回车键搜索
+  const handleSearchKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      performSearch();
+    }
   };
 
   // 处理分页
@@ -87,15 +90,6 @@ const ModernDatabaseViewer: React.FC<ModernDatabaseViewerProps> = ({ isOpen, onC
       loadDatabaseRecords(1);
     }
   }, [isOpen, loadDatabaseRecords]);
-
-  // 清理搜索超时
-  useEffect(() => {
-    return () => {
-      if (searchTimeout) {
-        clearTimeout(searchTimeout);
-      }
-    };
-  }, [searchTimeout]);
 
   if (!isOpen) return null;
 
@@ -141,11 +135,22 @@ const ModernDatabaseViewer: React.FC<ModernDatabaseViewerProps> = ({ isOpen, onC
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="搜索文件名、书名或AI描述..."
-                value={searchTerm}
+                value={searchInput}
                 onChange={handleSearchChange}
+                onKeyPress={handleSearchKeyPress}
                 className="pl-10"
               />
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSearchClick}
+              disabled={loading}
+              className="flex items-center space-x-2"
+            >
+              <Search className="h-4 w-4" />
+              <span>{loading ? '搜索中...' : '搜索'}</span>
+            </Button>
             <div className="text-sm text-muted-foreground whitespace-nowrap">
               {pagination ? `第 ${pagination.page}/${pagination.totalPages} 页，共 ${pagination.total} 条记录` : '加载中...'}
             </div>
