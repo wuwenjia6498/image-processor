@@ -49,7 +49,7 @@ const ModernDatabaseViewer: React.FC<ModernDatabaseViewerProps> = ({ isOpen, onC
         }
       }
     } catch (err) {
-      setError('获取数据库记录失败，请检查网络连接');
+      setError('获取插图数据库条目失败，请检查网络连接');
       console.error('获取数据库记录失败:', err);
     } finally {
       setLoading(false);
@@ -142,7 +142,7 @@ const ModernDatabaseViewer: React.FC<ModernDatabaseViewerProps> = ({ isOpen, onC
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <div className="flex items-center space-x-2">
             <Database className="h-5 w-5 text-blue-600" />
-            <CardTitle>数据库记录</CardTitle>
+            <CardTitle>插图数据库条目</CardTitle>
             {stats && (
               <div className="text-sm text-muted-foreground ml-4">
                 总计: {stats.total} 条 | 最近7天: {stats.recentCount} 条
@@ -195,7 +195,7 @@ const ModernDatabaseViewer: React.FC<ModernDatabaseViewerProps> = ({ isOpen, onC
               <span>{loading ? '搜索中...' : '搜索'}</span>
             </Button>
             <div className="text-sm text-muted-foreground whitespace-nowrap">
-              {pagination ? `第 ${pagination.page}/${pagination.totalPages} 页，共 ${pagination.total} 条记录` : '加载中...'}
+              {pagination ? `第 ${pagination.page}/${pagination.totalPages} 页，共 ${pagination.total} 条插图条目` : '加载中...'}
             </div>
           </div>
 
@@ -204,7 +204,7 @@ const ModernDatabaseViewer: React.FC<ModernDatabaseViewerProps> = ({ isOpen, onC
             {loading && records.length === 0 ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="h-6 w-6 animate-spin text-blue-600 mr-3" />
-                <span>正在加载数据...</span>
+                <span>正在加载插图数据...</span>
               </div>
             ) : error ? (
               <div className="flex items-center justify-center py-12 text-red-600">
@@ -212,7 +212,7 @@ const ModernDatabaseViewer: React.FC<ModernDatabaseViewerProps> = ({ isOpen, onC
               </div>
             ) : records.length === 0 ? (
               <div className="flex items-center justify-center py-12 text-muted-foreground">
-                <span>暂无数据</span>
+                <span>暂无插图数据</span>
               </div>
             ) : (
               <div className="space-y-4">
@@ -331,7 +331,7 @@ const ModernDatabaseViewer: React.FC<ModernDatabaseViewerProps> = ({ isOpen, onC
           {pagination && pagination.totalPages > 1 && (
             <div className="flex items-center justify-between pt-4 border-t">
               <div className="text-sm text-muted-foreground">
-                显示第 {(pagination.page - 1) * pageSize + 1} - {Math.min(pagination.page * pageSize, pagination.total)} 条
+                显示第 {(pagination.page - 1) * pageSize + 1} - {Math.min(pagination.page * pageSize, pagination.total)} 条插图条目
               </div>
               <div className="flex items-center space-x-2">
                 <Button
