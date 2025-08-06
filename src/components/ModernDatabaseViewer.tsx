@@ -21,7 +21,6 @@ const ModernDatabaseViewer: React.FC<ModernDatabaseViewerProps> = ({ isOpen, onC
   const [pagination, setPagination] = useState<PaginatedResult<DatabaseRecord> | null>(null);
   const [stats, setStats] = useState<{ total: number; recentCount: number } | null>(null);
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
-  const [imageLoadStates, setImageLoadStates] = useState<Record<string, 'loading' | 'loaded' | 'error'>>({});
 
   // 防抖搜索
   const debouncedSearch = useCallback((term: string) => {
@@ -81,24 +80,6 @@ const ModernDatabaseViewer: React.FC<ModernDatabaseViewerProps> = ({ isOpen, onC
     setCurrentPage(page);
     loadDatabaseRecords(page);
   };
-
-  // 图片加载处理
-  const handleImageLoad = (id: string) => {
-    setImageLoadStates(prev => ({ ...prev, [id]: 'loaded' }));
-  };
-
-  const handleImageError = (id: string) => {
-    setImageLoadStates(prev => ({ ...prev, [id]: 'error' }));
-  };
-
-  // 初始化图片加载状态
-  useEffect(() => {
-    const newImageStates: Record<string, 'loading' | 'loaded' | 'error'> = {};
-    records.forEach(record => {
-      newImageStates[record.id] = 'loading';
-    });
-    setImageLoadStates(newImageStates);
-  }, [records]);
 
   // 组件打开时加载数据
   useEffect(() => {
@@ -224,26 +205,15 @@ const ModernDatabaseViewer: React.FC<ModernDatabaseViewerProps> = ({ isOpen, onC
                         {/* 图片预览 */}
                         {record.image_url && (
                           <div className="relative w-32 h-24 bg-gray-100 rounded-lg overflow-hidden">
-                            {imageLoadStates[record.id] === 'loading' && (
-                              <div className="absolute inset-0 flex items-center justify-center">
-                                <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
-                              </div>
-                            )}
-                            {imageLoadStates[record.id] === 'error' && (
-                              <div className="absolute inset-0 flex items-center justify-center">
-                                <Image className="h-6 w-6 text-gray-400" />
-                              </div>
-                            )}
                             <img
                               src={record.image_url}
                               alt={record.filename}
-                              className={cn(
-                                "w-full h-full object-cover transition-opacity duration-300",
-                                imageLoadStates[record.id] === 'loaded' ? 'opacity-100' : 'opacity-0'
-                              )}
-                              onLoad={() => handleImageLoad(record.id)}
-                              onError={() => handleImageError(record.id)}
+                              className="w-full h-full object-cover"
                               loading="lazy"
+                              onError={(e) => {
+                                // 图片加载失败时隐藏图片
+                                (e.target as HTMLImageElement).style.display = 'none';
+                              }}
                             />
                           </div>
                         )}
