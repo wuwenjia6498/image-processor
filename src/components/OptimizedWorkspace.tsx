@@ -555,7 +555,7 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
             </TabsTrigger>
             <TabsTrigger value="upload" className="flex items-center space-x-2">
               <Upload className="h-4 w-4" />
-              <span>插图处理</span>
+              <span>添加插图</span>
             </TabsTrigger>
             <TabsTrigger value="gallery" className="flex items-center space-x-2">
               <Image className="h-4 w-4" />
