@@ -551,7 +551,7 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
           <TabsList className="grid w-full grid-cols-3 mb-6">
             <TabsTrigger value="match" className="flex items-center space-x-2">
               <Search className="h-4 w-4" />
-              <span>文案匹配</span>
+              <span>文图匹配</span>
             </TabsTrigger>
             <TabsTrigger value="upload" className="flex items-center space-x-2">
               <Upload className="h-4 w-4" />
@@ -569,7 +569,7 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
               {/* 匹配输入区域 */}
               <Card>
                 <CardHeader>
-                  <CardTitle>文案匹配</CardTitle>
+                  <CardTitle>文图匹配</CardTitle>
                   <CardDescription>
                     输入文案内容，系统将为您推荐匹配度最高的5张插图
                   </CardDescription>
