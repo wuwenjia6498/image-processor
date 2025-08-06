@@ -243,34 +243,36 @@ const ModernDatabaseViewer: React.FC<ModernDatabaseViewerProps> = ({ isOpen, onC
                         </div>
 
                         {/* AI描述 */}
-                        <div className="text-sm text-slate-700 leading-relaxed">
-                          <div className="space-y-2">
-                            <div>
-                              {expandedDescriptions.has(record.id) 
-                                ? record.ai_description
-                                : record.ai_description.length > 200 
-                                  ? `${record.ai_description.substring(0, 200)}...`
-                                  : record.ai_description
-                              }
+                        <div className="bg-slate-50 rounded-lg p-4">
+                          <div className="text-sm text-slate-700 leading-relaxed">
+                            <div className="space-y-2">
+                              <div className="whitespace-pre-line prose prose-sm max-w-none">
+                                {expandedDescriptions.has(record.id) 
+                                  ? record.ai_description
+                                  : record.ai_description.length > 200 
+                                    ? `${record.ai_description.substring(0, 200)}...`
+                                    : record.ai_description
+                                }
+                              </div>
+                              {record.ai_description.length > 200 && (
+                                <button 
+                                  onClick={() => toggleDescription(record.id)}
+                                  className="text-blue-600 hover:text-blue-800 text-sm flex items-center space-x-1 transition-colors mt-2"
+                                >
+                                  {expandedDescriptions.has(record.id) ? (
+                                    <>
+                                      <ChevronUp className="h-3 w-3" />
+                                      <span>收起</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <ChevronDown className="h-3 w-3" />
+                                      <span>展开更多</span>
+                                    </>
+                                  )}
+                                </button>
+                              )}
                             </div>
-                            {record.ai_description.length > 200 && (
-                              <button 
-                                onClick={() => toggleDescription(record.id)}
-                                className="text-blue-600 hover:text-blue-800 text-sm flex items-center space-x-1 transition-colors"
-                              >
-                                {expandedDescriptions.has(record.id) ? (
-                                  <>
-                                    <ChevronUp className="h-3 w-3" />
-                                    <span>收起</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <ChevronDown className="h-3 w-3" />
-                                    <span>展开更多</span>
-                                  </>
-                                )}
-                              </button>
-                            )}
                           </div>
                         </div>
 
