@@ -91,4 +91,20 @@ Thumbs.db
 
 # Logs
 logs
-*.log 
+*.log
+
+# Image files - 忽略图片文件
+data/images/
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.webp
+*.bmp
+*.svg
+
+# 但保留public目录中的logo图片
+!public/*.jpg
+!public/*.png
+!public/*.gif
+!public/*.webp 
