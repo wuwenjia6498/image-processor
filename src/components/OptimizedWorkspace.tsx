@@ -28,7 +28,7 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
   const [matchError, setMatchError] = useState<string | null>(null);
   
   // 界面控制状态
-  const [activeTab, setActiveTab] = useState<'upload' | 'match'>('match');
+  const [activeTab, setActiveTab] = useState<'upload' | 'match' | 'gallery'>('match');
   const [isDatabaseViewerOpen, setIsDatabaseViewerOpen] = useState(false);
   const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
   const [expandedImages, setExpandedImages] = useState<Set<string>>(new Set());
@@ -508,17 +508,6 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
                 <p className="text-sm text-slate-600">图片上传及与文图智能匹配系统</p>
               </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsDatabaseViewerOpen(true)}
-                className="flex items-center space-x-2"
-              >
-                <Database className="h-4 w-4" />
-                <span>数据库</span>
-              </Button>
-            </div>
           </div>
         </div>
       </header>
@@ -558,8 +547,8 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
         )}
 
         {/* 主要功能区域 */}
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'upload' | 'match')}>
-          <TabsList className="grid w-full grid-cols-2 mb-6">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'upload' | 'match' | 'gallery')}>
+          <TabsList className="grid w-full grid-cols-3 mb-6">
             <TabsTrigger value="match" className="flex items-center space-x-2">
               <Search className="h-4 w-4" />
               <span>文案匹配</span>
@@ -567,6 +556,10 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
             <TabsTrigger value="upload" className="flex items-center space-x-2">
               <Upload className="h-4 w-4" />
               <span>图片处理</span>
+            </TabsTrigger>
+            <TabsTrigger value="gallery" className="flex items-center space-x-2">
+              <Image className="h-4 w-4" />
+              <span>插图库</span>
             </TabsTrigger>
           </TabsList>
 
@@ -968,6 +961,34 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
                   </CardContent>
                 </Card>
               )}
+            </div>
+          </TabsContent>
+
+          {/* 插图库标签页 */}
+          <TabsContent value="gallery">
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>插图库</CardTitle>
+                  <CardDescription>
+                    浏览系统中所有已处理并匹配的插图
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-8">
+                    <Image className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-slate-900 mb-2">插图库</h3>
+                    <p className="text-slate-600 mb-4">查看所有已上传和处理的插图</p>
+                    <Button
+                      onClick={() => setIsDatabaseViewerOpen(true)}
+                      className="flex items-center space-x-2 mx-auto"
+                    >
+                      <Database className="h-4 w-4" />
+                      <span>打开插图库</span>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </TabsContent>
         </Tabs>
