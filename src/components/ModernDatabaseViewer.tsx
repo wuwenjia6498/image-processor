@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { X, Search, RefreshCw, Database, Calendar, FileText, Image, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { X, Search, RefreshCw, Database, Calendar, FileText, Image, ChevronLeft, ChevronRight, Loader2, Download, Maximize2, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
@@ -21,6 +21,8 @@ const ModernDatabaseViewer: React.FC<ModernDatabaseViewerProps> = ({ isOpen, onC
   const [pagination, setPagination] = useState<PaginatedResult<DatabaseRecord> | null>(null);
   const [stats, setStats] = useState<{ total: number; recentCount: number } | null>(null);
   const [searchInput, setSearchInput] = useState(''); // 新增：搜索输入框的值
+  const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
+  const [selectedImage, setSelectedImage] = useState<{ url: string; filename: string } | null>(null);
 
   // 加载数据库记录
   const loadDatabaseRecords = useCallback(async (page: number = 1, search: string = searchTerm) => {
@@ -82,6 +84,47 @@ const ModernDatabaseViewer: React.FC<ModernDatabaseViewerProps> = ({ isOpen, onC
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
     loadDatabaseRecords(page);
+  };
+
+  // 处理描述展开/收起
+  const toggleDescription = (id: string) => {
+    setExpandedDescriptions(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
+
+  // 处理图片放大
+  const handleImageClick = (url: string, filename: string) => {
+    setSelectedImage({ url, filename });
+  };
+
+  // 关闭图片放大
+  const closeImageModal = () => {
+    setSelectedImage(null);
+  };
+
+  // 下载图片
+  const downloadImage = async (url: string, filename: string) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error('下载图片失败:', error);
+    }
   };
 
   // 组件打开时加载数据
@@ -201,25 +244,77 @@ const ModernDatabaseViewer: React.FC<ModernDatabaseViewerProps> = ({ isOpen, onC
 
                         {/* AI描述 */}
                         <div className="text-sm text-slate-700 leading-relaxed">
-                          {record.ai_description.length > 200 
-                            ? `${record.ai_description.substring(0, 200)}...`
-                            : record.ai_description
-                          }
+                          <div className="space-y-2">
+                            <div>
+                              {expandedDescriptions.has(record.id) 
+                                ? record.ai_description
+                                : record.ai_description.length > 200 
+                                  ? `${record.ai_description.substring(0, 200)}...`
+                                  : record.ai_description
+                              }
+                            </div>
+                            {record.ai_description.length > 200 && (
+                              <button 
+                                onClick={() => toggleDescription(record.id)}
+                                className="text-blue-600 hover:text-blue-800 text-sm flex items-center space-x-1 transition-colors"
+                              >
+                                {expandedDescriptions.has(record.id) ? (
+                                  <>
+                                    <ChevronUp className="h-3 w-3" />
+                                    <span>收起</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <ChevronDown className="h-3 w-3" />
+                                    <span>展开更多</span>
+                                  </>
+                                )}
+                              </button>
+                            )}
+                          </div>
                         </div>
 
                         {/* 图片预览 */}
                         {record.image_url && (
-                          <div className="relative w-32 h-24 bg-gray-100 rounded-lg overflow-hidden">
+                          <div className="relative w-32 h-24 bg-gray-100 rounded-lg overflow-hidden group">
                             <img
                               src={record.image_url}
                               alt={record.filename}
-                              className="w-full h-full object-cover"
+                              className="w-full h-full object-cover cursor-pointer transition-transform duration-200 group-hover:scale-105"
                               loading="lazy"
+                              onClick={() => handleImageClick(record.image_url!, record.filename)}
                               onError={(e) => {
                                 // 图片加载失败时隐藏图片
                                 (e.target as HTMLImageElement).style.display = 'none';
                               }}
                             />
+                            {/* 图片操作按钮 */}
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                              <div className="flex space-x-2">
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  className="h-8 w-8 p-0 bg-white/90 hover:bg-white"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleImageClick(record.image_url!, record.filename);
+                                  }}
+                                >
+                                  <Maximize2 className="h-4 w-4 text-gray-700" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  className="h-8 w-8 p-0 bg-white/90 hover:bg-white"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    downloadImage(record.image_url!, record.filename);
+                                  }}
+                                >
+                                  <Download className="h-4 w-4 text-gray-700" />
+                                </Button>
+                              </div>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -263,6 +358,49 @@ const ModernDatabaseViewer: React.FC<ModernDatabaseViewerProps> = ({ isOpen, onC
           )}
         </CardContent>
       </Card>
+
+      {/* 图片放大模态框 */}
+      {selectedImage && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+          <div className="relative max-w-4xl max-h-[90vh] bg-white rounded-lg overflow-hidden">
+            {/* 模态框头部 */}
+            <div className="flex items-center justify-between p-4 border-b">
+              <div className="flex items-center space-x-2">
+                <Image className="h-5 w-5 text-blue-600" />
+                <span className="font-semibold text-slate-900">{selectedImage.filename}</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => downloadImage(selectedImage.url, selectedImage.filename)}
+                  className="flex items-center space-x-2"
+                >
+                  <Download className="h-4 w-4" />
+                  <span>下载</span>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={closeImageModal}
+                  className="h-8 w-8 p-0"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            
+            {/* 图片内容 */}
+            <div className="p-4">
+              <img
+                src={selectedImage.url}
+                alt={selectedImage.filename}
+                className="w-full h-auto max-h-[70vh] object-contain rounded-lg"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
