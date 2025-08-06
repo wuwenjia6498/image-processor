@@ -81,8 +81,15 @@ function extractBookTitle(filename: string): string {
   // 移除文件扩展名
   const nameWithoutExt = filename.replace(/\.[^/.]+$/, '');
   
-  // 移除数字前缀（如 "01-", "02-" 等）
-  const titleWithoutPrefix = nameWithoutExt.replace(/^\d+-/, '');
+  // 移除数字前缀（如 "1-", "3-", "4-" 等）
+  // 注意：只移除数字+连字符的前缀，不移除像"14只"这样数字是标题一部分的情况
+  let titleWithoutPrefix = nameWithoutExt.replace(/^\d+-/, '');
+  
+  // 移除后缀数字（如 "-1", "-2", "1", "2" 等）
+  // 先移除连字符+数字的后缀
+  titleWithoutPrefix = titleWithoutPrefix.replace(/-\d+$/, '');
+  // 再移除纯数字后缀
+  titleWithoutPrefix = titleWithoutPrefix.replace(/\d+$/, '');
   
   // 如果标题为空，返回文件名
   return titleWithoutPrefix || nameWithoutExt;
@@ -359,3 +366,52 @@ export const getProcessingStatus = async (): Promise<{
     error: 0
   };
 }; 
+
+// 测试函数：验证书名提取逻辑
+export function testExtractBookTitle(): void {
+  const testCases = [
+    { input: "3-飞吧，飞过最高的山-2", expected: "飞吧，飞过最高的山" },
+    { input: "4-我的山野中国--双大鞋1", expected: "我的山野中国--双大鞋" },
+    { input: "1-老鼠和鼹鼠:有我的礼物吗3", expected: "老鼠和鼹鼠:有我的礼物吗" },
+    { input: "4-雪", expected: "雪" },
+    { input: "5-雪花的方向", expected: "雪花的方向" },
+    { input: "14只老鼠过冬天2", expected: "14只老鼠过冬天" },
+    { input: "4-北京的庙会2", expected: "北京的庙会" },
+    { input: "4-大雪天-1", expected: "大雪天" },
+    { input: "冬至·饺子宴2", expected: "冬至·饺子宴" },
+    { input: "红礼盒-1", expected: "红礼盒" },
+    { input: "年兽来了-1", expected: "年兽来了" },
+    { input: "元宵节的故事-1", expected: "元宵节的故事" },
+    { input: "元宵节的故事-2", expected: "元宵节的故事" },
+    { input: "普通文件名.jpg", expected: "普通文件名" },
+    { input: "没有数字的文件名.png", expected: "没有数字的文件名" }
+  ];
+
+  console.log("🧪 测试书名提取逻辑:");
+  console.log("=" .repeat(50));
+  
+  let passed = 0;
+  let failed = 0;
+  
+  testCases.forEach(({ input, expected }, index) => {
+    const result = extractBookTitle(input);
+    const isCorrect = result === expected;
+    
+    if (isCorrect) {
+      passed++;
+      console.log(`✅ 测试 ${index + 1}: "${input}" → "${result}"`);
+    } else {
+      failed++;
+      console.log(`❌ 测试 ${index + 1}: "${input}" → "${result}" (期望: "${expected}")`);
+    }
+  });
+  
+  console.log("=" .repeat(50));
+  console.log(`📊 测试结果: ${passed} 通过, ${failed} 失败`);
+  
+  if (failed === 0) {
+    console.log("🎉 所有测试通过！书名提取逻辑正确。");
+  } else {
+    console.log("⚠️ 有测试失败，需要检查提取逻辑。");
+  }
+} 
