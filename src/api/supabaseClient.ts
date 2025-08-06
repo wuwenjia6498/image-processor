@@ -1,37 +1,31 @@
-import { createClient } from '@supabase/supabase-js';
+// 重新导出统一的Supabase客户端
+export { supabase, getSupabaseClient } from '../lib/supabase';
 
-// 直接使用配置的Supabase信息
-const supabaseUrl = 'https://ixdlwnzktpkhwaxeddzh.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml4ZGx3bnprdHBraHdheGVkZHpoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MzQyNDY0MiwiZXhwIjoyMDY5MDAwNjQyfQ.wJUDcntT_JNTE2heAHLsIddo-_UDkhQ5_Q1Zvk5JeiQ';
-
-export const supabase = createClient(supabaseUrl, supabaseKey);
-
+// 数据库记录接口
 export interface DatabaseRecord {
   id: string;
   filename: string;
   book_title: string;
   ai_description: string;
-  age_orientation: string;
-  text_type_fit: string;
-  image_url: string;
+  image_url?: string;
+  vector_embedding?: number[];
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
 }
 
-export const fetchDatabaseRecords = async (): Promise<DatabaseRecord[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('illustrations_optimized')
-      .select('*')
-      .order('created_at', { ascending: false });
+// 获取数据库记录
+export async function fetchDatabaseRecords(): Promise<DatabaseRecord[]> {
+  const { supabase } = await import('../lib/supabase');
+  
+  const { data, error } = await supabase
+    .from('illustrations_optimized')
+    .select('id, filename, book_title, ai_description, image_url, created_at, updated_at')
+    .order('created_at', { ascending: false })
+    .limit(100);
 
-    if (error) {
-      throw error;
-    }
-
-    return data || [];
-  } catch (error) {
-    console.error('获取数据库记录失败:', error);
-    throw error;
+  if (error) {
+    throw new Error(`获取数据库记录失败: ${error.message}`);
   }
-}; 
+
+  return data || [];
+} 

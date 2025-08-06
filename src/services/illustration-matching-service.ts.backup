@@ -1,0 +1,221 @@
+import { Pinecone } from '@pinecone-database/pinecone';
+import { OpenAI } from 'openai';
+import { createClient } from '@supabase/supabase-js';
+
+// 初始化客户端
+const pinecone = new Pinecone({
+  apiKey: process.env.PINECONE_API_KEY!
+});
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY!
+});
+
+const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+export interface IllustrationMatch {
+  id: string;
+  filename: string;
+  bookTitle: string;
+  description: string;
+  imageUrl: string;
+  similarity: number;
+  metadata: {
+    ageOrientation?: string;
+    textTypeFit?: string;
+    bookTheme?: string;
+    keywords?: string[];
+  };
+}
+
+export interface TextContent {
+  content: string;
+  targetAge?: string;
+  contentType?: string;
+  theme?: string;
+  keywords?: string[];
+}
+
+/**
+ * 将文案内容转换为向量
+ */
+export async function textToVector(text: string): Promise<number[]> {
+  try {
+    const response = await openai.embeddings.create({
+      model: 'text-embedding-3-small',
+      input: text,
+    });
+    
+    return response.data[0].embedding;
+  } catch (error) {
+    console.error('文本向量化失败:', error);
+    throw new Error('文本向量化失败');
+  }
+}
+
+/**
+ * 智能匹配文案与插图
+ */
+export async function matchIllustrationsToText(
+  textContent: TextContent,
+  topK: number = 10
+): Promise<IllustrationMatch[]> {
+  try {
+    const index = pinecone.index(process.env.PINECONE_INDEX_NAME!);
+    
+    // 1. 将文案转换为向量
+    console.log('🔄 将文案转换为向量...');
+    const textVector = await textToVector(textContent.content);
+    
+    // 2. 构建查询条件
+    const queryOptions: any = {
+      vector: textVector,
+      topK: topK,
+      includeMetadata: true,
+      filter: {}
+    };
+    
+    // 3. 添加年龄过滤条件
+    if (textContent.targetAge) {
+      queryOptions.filter.ageOrientation = { $eq: textContent.targetAge };
+    }
+    
+    // 4. 添加内容类型过滤条件
+    if (textContent.contentType) {
+      queryOptions.filter.textTypeFit = { $eq: textContent.contentType };
+    }
+    
+    // 5. 执行相似度搜索
+    console.log('🔍 执行相似度搜索...');
+    const queryResponse = await index.query(queryOptions);
+    
+    // 6. 处理搜索结果
+    const matches: IllustrationMatch[] = queryResponse.matches.map(match => ({
+      id: match.id,
+      filename: match.metadata?.filename || '',
+      bookTitle: match.metadata?.book_title || '',
+      description: match.metadata?.description || '',
+      imageUrl: match.metadata?.image_url || '',
+      similarity: match.score || 0,
+      metadata: {
+        ageOrientation: match.metadata?.age_orientation,
+        textTypeFit: match.metadata?.text_type_fit,
+        bookTheme: match.metadata?.book_theme,
+        keywords: match.metadata?.keywords || []
+      }
+    }));
+    
+    console.log(`✅ 找到 ${matches.length} 个匹配的插图`);
+    return matches;
+    
+  } catch (error) {
+    console.error('插图匹配失败:', error);
+    throw new Error('插图匹配失败');
+  }
+}
+
+/**
+ * 基于关键词的插图搜索
+ */
+export async function searchIllustrationsByKeywords(
+  keywords: string[],
+  targetAge?: string,
+  contentType?: string,
+  topK: number = 10
+): Promise<IllustrationMatch[]> {
+  try {
+    const index = pinecone.index(process.env.PINECONE_INDEX_NAME!);
+    
+    // 1. 将关键词组合成搜索文本
+    const searchText = keywords.join(' ');
+    const searchVector = await textToVector(searchText);
+    
+    // 2. 构建查询条件
+    const queryOptions: any = {
+      vector: searchVector,
+      topK: topK,
+      includeMetadata: true,
+      filter: {}
+    };
+    
+    // 3. 添加过滤条件
+    if (targetAge) {
+      queryOptions.filter.ageOrientation = { $eq: targetAge };
+    }
+    
+    if (contentType) {
+      queryOptions.filter.textTypeFit = { $eq: contentType };
+    }
+    
+    // 4. 执行搜索
+    const queryResponse = await index.query(queryOptions);
+    
+    // 5. 处理结果
+    const matches: IllustrationMatch[] = queryResponse.matches.map(match => ({
+      id: match.id,
+      filename: match.metadata?.filename || '',
+      bookTitle: match.metadata?.book_title || '',
+      description: match.metadata?.description || '',
+      imageUrl: match.metadata?.image_url || '',
+      similarity: match.score || 0,
+      metadata: {
+        ageOrientation: match.metadata?.age_orientation,
+        textTypeFit: match.metadata?.text_type_fit,
+        bookTheme: match.metadata?.book_theme,
+        keywords: match.metadata?.keywords || []
+      }
+    }));
+    
+    return matches;
+    
+  } catch (error) {
+    console.error('关键词搜索失败:', error);
+    throw new Error('关键词搜索失败');
+  }
+}
+
+/**
+ * 获取插图详情
+ */
+export async function getIllustrationDetails(illustrationId: string): Promise<any> {
+  try {
+    const { data, error } = await supabase
+      .from('illustrations')
+      .select('*')
+      .eq('id', illustrationId)
+      .single();
+    
+    if (error) {
+      throw new Error(`获取插图详情失败: ${error.message}`);
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('获取插图详情失败:', error);
+    throw new Error('获取插图详情失败');
+  }
+}
+
+/**
+ * 批量获取插图信息
+ */
+export async function getIllustrationsBatch(illustrationIds: string[]): Promise<any[]> {
+  try {
+    const { data, error } = await supabase
+      .from('illustrations')
+      .select('*')
+      .in('id', illustrationIds);
+    
+    if (error) {
+      throw new Error(`批量获取插图失败: ${error.message}`);
+    }
+    
+    return data || [];
+  } catch (error) {
+    console.error('批量获取插图失败:', error);
+    throw new Error('批量获取插图失败');
+  }
+} 
