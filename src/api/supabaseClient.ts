@@ -111,4 +111,52 @@ export async function getDatabaseStats(): Promise<{
     total: total || 0,
     recentCount: recentCount || 0
   };
+}
+
+// 删除数据库记录
+export async function deleteDatabaseRecord(id: string): Promise<void> {
+  const { supabase } = await import('../lib/supabase');
+  
+  // 首先获取记录信息，以便删除对应的图片文件
+  const { data: record, error: fetchError } = await supabase
+    .from('illustrations_optimized')
+    .select('filename, image_url')
+    .eq('id', id)
+    .single();
+  
+  if (fetchError) {
+    throw new Error(`获取记录信息失败: ${fetchError.message}`);
+  }
+  
+  // 删除数据库记录
+  const { error: deleteError } = await supabase
+    .from('illustrations_optimized')
+    .delete()
+    .eq('id', id);
+  
+  if (deleteError) {
+    throw new Error(`删除数据库记录失败: ${deleteError.message}`);
+  }
+  
+  // 如果存在图片URL，尝试删除存储中的图片文件
+  if (record?.image_url) {
+    try {
+      // 从URL中提取文件路径
+      const urlParts = record.image_url.split('/');
+      const fileName = urlParts[urlParts.length - 1];
+      
+      // 删除存储中的图片文件
+      const { error: storageError } = await supabase.storage
+        .from('illustrations')
+        .remove([fileName]);
+      
+      if (storageError) {
+        console.warn('删除存储文件失败:', storageError);
+        // 不抛出错误，因为数据库记录已经删除成功
+      }
+    } catch (storageError) {
+      console.warn('删除存储文件时出错:', storageError);
+      // 不抛出错误，因为数据库记录已经删除成功
+    }
+  }
 } 

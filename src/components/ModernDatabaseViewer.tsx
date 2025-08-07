@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { X, Search, RefreshCw, Database, Calendar, FileText, Image, ChevronLeft, ChevronRight, Loader2, Download, Maximize2, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, Search, RefreshCw, Database, Calendar, FileText, Image, ChevronLeft, ChevronRight, Loader2, Download, Maximize2, ChevronDown, ChevronUp, Trash2, AlertCircle } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
-import { fetchDatabaseRecordsPaginated, getDatabaseStats, DatabaseRecord, PaginatedResult } from '../api/supabaseClient';
+import { fetchDatabaseRecordsPaginated, getDatabaseStats, deleteDatabaseRecord, DatabaseRecord, PaginatedResult } from '../api/supabaseClient';
 import { cn } from '../lib/utils';
 
 interface ModernDatabaseViewerProps {
@@ -23,6 +23,8 @@ const ModernDatabaseViewer: React.FC<ModernDatabaseViewerProps> = ({ isOpen, onC
   const [searchInput, setSearchInput] = useState(''); // 新增：搜索输入框的值
   const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
   const [selectedImage, setSelectedImage] = useState<{ url: string; filename: string } | null>(null);
+  const [deletingRecord, setDeletingRecord] = useState<string | null>(null); // 正在删除的记录ID
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null); // 确认删除的记录ID
 
   // 加载数据库记录
   const loadDatabaseRecords = useCallback(async (page: number = 1, search: string = searchTerm) => {
@@ -124,6 +126,50 @@ const ModernDatabaseViewer: React.FC<ModernDatabaseViewerProps> = ({ isOpen, onC
       window.URL.revokeObjectURL(downloadUrl);
     } catch (error) {
       console.error('下载插图失败:', error);
+    }
+  };
+
+  // 处理删除确认
+  const handleDeleteConfirm = (id: string) => {
+    setDeleteConfirmId(id);
+  };
+
+  // 取消删除确认
+  const handleDeleteCancel = () => {
+    setDeleteConfirmId(null);
+  };
+
+  // 执行删除操作
+  const handleDeleteRecord = async (id: string) => {
+    setDeletingRecord(id);
+    setDeleteConfirmId(null);
+    
+    try {
+      await deleteDatabaseRecord(id);
+      
+      // 从当前记录列表中移除被删除的记录
+      setRecords(prev => prev.filter(record => record.id !== id));
+      
+      // 重新加载当前页面的数据（如果当前页面没有数据了，回到上一页）
+      if (records.length === 1 && currentPage > 1) {
+        handlePageChange(currentPage - 1);
+      } else {
+        loadDatabaseRecords(currentPage, searchTerm);
+      }
+      
+      // 重新加载统计信息
+      try {
+        const statsData = await getDatabaseStats();
+        setStats(statsData);
+      } catch (statsError) {
+        console.warn('更新统计信息失败:', statsError);
+      }
+      
+    } catch (error) {
+      console.error('删除记录失败:', error);
+      alert('删除失败: ' + (error as Error).message);
+    } finally {
+      setDeletingRecord(null);
     }
   };
 
@@ -239,6 +285,21 @@ const ModernDatabaseViewer: React.FC<ModernDatabaseViewerProps> = ({ isOpen, onC
                             <span className="text-sm text-muted-foreground">
                               {new Date(record.created_at).toLocaleDateString('zh-CN')}
                             </span>
+                            {/* 删除按钮 */}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteConfirm(record.id)}
+                              disabled={deletingRecord === record.id}
+                              className="h-8 w-8 p-0 text-red-600 hover:text-red-800 hover:bg-red-50"
+                              title="删除此记录"
+                            >
+                              {deletingRecord === record.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                            </Button>
                           </div>
                         </div>
 
@@ -401,6 +462,61 @@ const ModernDatabaseViewer: React.FC<ModernDatabaseViewerProps> = ({ isOpen, onC
               />
             </div>
           </div>
+        </div>
+      )}
+
+      {/* 删除确认对话框 */}
+      {deleteConfirmId && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2 text-red-600">
+                <Trash2 className="h-5 w-5" />
+                <span>确认删除</span>
+              </CardTitle>
+              <CardDescription>
+                您确定要删除这条插图数据库条目吗？此操作不可撤销，将同时删除数据库记录和对应的图片文件。
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <div className="flex items-center space-x-2 text-red-700">
+                  <AlertCircle className="h-4 w-4" />
+                  <span className="text-sm font-medium">警告</span>
+                </div>
+                <p className="text-sm text-red-600 mt-1">
+                  删除后将无法恢复，请谨慎操作。
+                </p>
+              </div>
+              <div className="flex items-center justify-end space-x-3">
+                <Button
+                  variant="outline"
+                  onClick={handleDeleteCancel}
+                  disabled={deletingRecord === deleteConfirmId}
+                >
+                  取消
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => handleDeleteRecord(deleteConfirmId)}
+                  disabled={deletingRecord === deleteConfirmId}
+                  className="flex items-center space-x-2"
+                >
+                  {deletingRecord === deleteConfirmId ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>删除中...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="h-4 w-4" />
+                      <span>确认删除</span>
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
     </div>
