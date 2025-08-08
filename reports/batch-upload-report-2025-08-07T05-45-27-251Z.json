@@ -1,0 +1,15 @@
+{
+  "total": 1,
+  "processed": 1,
+  "success": 1,
+  "failed": 0,
+  "skipped": 0,
+  "startTime": "2025-08-07T05:45:13.090Z",
+  "failedFiles": [],
+  "processedFiles": [
+    "132-新测试图片.jpg"
+  ],
+  "endTime": "2025-08-07T05:45:27.251Z",
+  "duration": 14161,
+  "successRate": "100.00%"
+}

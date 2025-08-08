@@ -28,6 +28,12 @@
     "test-optimized": "node scripts/test/test-optimized-table.cjs",
     "test-image-url": "node scripts/test/test-image-url.cjs",
     "upload-images": "node scripts/batch-upload-images.cjs",
+    "batch-upload-enhanced": "node scripts/batch-upload-enhanced.cjs",
+    "resume-upload": "node scripts/resume-batch-upload.cjs",
+    "monitor-upload": "node scripts/monitor-batch-progress.cjs",
+    "quick-start": "node scripts/quick-start.cjs",
+    "test-gpt4v": "node scripts/test-gpt4v.cjs",
+    "manage-records": "node scripts/manage-duplicate-records.cjs",
     "update-urls": "node scripts/update-database-urls.cjs",
     "merge-csv": "tsx src/processors/merge-csv-data.ts",
     "test-chinese": "node scripts/test/test-chinese-filenames.js",
@@ -36,7 +42,8 @@
     "test-search": "tsx src/test-search.ts",
     "start-illustration-service": "tsx src/server/illustration-server.ts",
     "test-illustration-client": "tsx examples/illustration-client-example.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "fix-vectors": "node scripts/fix-missing-vectors.cjs"
   },
   "keywords": [],
   "author": "",

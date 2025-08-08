@@ -70,7 +70,7 @@ async function processSingleImage() {
     console.log(`🤖 AI描述: ${description.substring(0, 50)}...`);
     
     // 3. 生成模拟向量
-    const embedding = Array.from({ length: 1024 }, () => Math.random() * 2 - 1);
+    const embedding = Array.from({ length: 1536 }, () => Math.random() * 2 - 1);
     console.log(`🔢 向量维度: ${embedding.length}`);
     
     // 4. 上传图片到Supabase存储

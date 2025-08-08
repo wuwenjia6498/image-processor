@@ -1,0 +1,13 @@
+{
+  "total": 11,
+  "processed": 0,
+  "success": 0,
+  "failed": 0,
+  "skipped": 11,
+  "startTime": "2025-08-07T05:36:13.150Z",
+  "failedFiles": [],
+  "processedFiles": [],
+  "endTime": "2025-08-07T05:36:18.536Z",
+  "duration": 5386,
+  "successRate": "0.00%"
+}

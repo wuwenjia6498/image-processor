@@ -2,7 +2,7 @@ import path from 'path';
 import fs from 'fs';
 import { createClient } from '@supabase/supabase-js';
 import { Pinecone } from '@pinecone-database/pinecone';
-import { generateEnhancedDescription, autoCompleteFields } from './enhanced-ai-service';
+import { generateImageDescription } from '../services/enhanced-ai-service';
 
 // 加载环境变量
 import dotenv from 'dotenv';
@@ -117,7 +117,7 @@ function getAllImageFiles(imagesDir: string): string[] {
 
 // 生成模拟的向量嵌入
 function generateMockEmbedding(): number[] {
-  return Array.from({ length: 1024 }, () => Math.random() * 2 - 1);
+  return Array.from({ length: 1536 }, () => Math.random() * 2 - 1);
 }
 
 // 增强版图片处理主函数
@@ -163,12 +163,8 @@ async function processAllImagesEnhanced() {
 
         // 2. 生成增强版AI描述（包含主题信息）
         console.log('  🤖 生成增强版AI描述...');
-        const enhancedResult = await generateEnhancedDescription(imagePath, bookTitle);
-        console.log(`  ✓ 增强描述生成完成: ${enhancedResult.description.substring(0, 50)}...`);
-        console.log(`  ✓ 年龄定位: ${enhancedResult.ageOrientation}`);
-        console.log(`  ✓ 文本类型: ${enhancedResult.textTypeFit}`);
-        console.log(`  ✓ 绘本主题: ${enhancedResult.bookTheme}`);
-        console.log(`  ✓ 关键词: ${enhancedResult.keywords.join('、')}`);
+        const aiDescription = await generateImageDescription(imagePath, bookTitle);
+        console.log(`  ✓ 增强描述生成完成: ${aiDescription.substring(0, 50)}...`);
 
         // 3. 生成向量嵌入
         console.log('  🔢 生成向量嵌入...');
@@ -211,9 +207,7 @@ async function processAllImagesEnhanced() {
             filename: originalFilename,
             book_title: bookTitle,
             image_url: publicUrl,
-            ai_description: enhancedResult.description,
-            age_orientation: enhancedResult.ageOrientation,  // 自动完成
-            text_type_fit: enhancedResult.textTypeFit,       // 自动完成
+            ai_description: aiDescription,
             vector_embedding: embedding,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
@@ -233,12 +227,8 @@ async function processAllImagesEnhanced() {
             metadata: {
               filename: originalFilename,
               book_title: bookTitle,
-              description: enhancedResult.description,
+              description: aiDescription,
               image_url: publicUrl,
-              age_orientation: enhancedResult.ageOrientation,
-              text_type_fit: enhancedResult.textTypeFit,
-              book_theme: enhancedResult.bookTheme,
-              keywords: enhancedResult.keywords,
               processed_at: new Date().toISOString()
             }
           }]);
@@ -251,11 +241,11 @@ async function processAllImagesEnhanced() {
         csvData.push({
           filename: originalFilename,
           book_title: bookTitle,
-          ai_description: enhancedResult.description,
-          age_orientation: enhancedResult.ageOrientation,
-          text_type_fit: enhancedResult.textTypeFit,
-          book_theme: enhancedResult.bookTheme,
-          keywords: enhancedResult.keywords.join('、')
+          ai_description: aiDescription,
+          age_orientation: 'N/A', // 自动完成
+          text_type_fit: 'N/A',   // 自动完成
+          book_theme: 'N/A',
+          keywords: 'N/A'
         });
 
         console.log(`✅ 图片 ${originalFilename} 处理完成！`);

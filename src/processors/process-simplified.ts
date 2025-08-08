@@ -169,9 +169,9 @@ async function main() {
         // 3. 生成图像向量
         console.log('  → 生成图像向量...');
         let imageVector: number[] = [];
-        // 模拟向量（1024维，匹配Pinecone索引）
-        // 注意：在实际应用中，这里应该使用OpenAI的embedding API
-        imageVector = Array.from({ length: 1024 }, () => Math.random() * 2 - 1);
+        // 模拟向量（1536维，匹配Pinecone索引）
+        console.log('  🔢 生成向量嵌入（模拟）...');
+        imageVector = Array.from({ length: 1536 }, () => Math.random() * 2 - 1);
         console.log(`  ✓ 图像向量生成完成，维度: ${imageVector.length}`);
         
         // 4. 上传图片到Supabase存储

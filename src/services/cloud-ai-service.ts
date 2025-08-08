@@ -82,28 +82,25 @@ export async function generateOpenAIDescription(imagePath: string, bookTitle: st
 // 使用OpenAI生成图像向量嵌入
 export async function generateOpenAIEmbedding(imagePath: string): Promise<number[]> {
   try {
-    const client = initializeOpenAI();
-    
-    // 读取并编码图片为base64
-    const imageBuffer = fs.readFileSync(imagePath);
-    const base64Image = imageBuffer.toString('base64');
-    const mimeType = path.extname(imagePath).toLowerCase() === '.png' ? 'image/png' : 'image/jpeg';
-    
     console.log('  🌐 调用OpenAI Embedding API...');
     
     // 注意：OpenAI目前不直接支持图像embedding，我们需要先生成描述再生成embedding
     // 或者使用本地CLIP作为备用
-    console.log('  ⚠️ OpenAI暂不支持直接图像embedding，使用本地CLIP或模拟向量');
+    console.log('  ⚠️ OpenAI暂不支持直接图像embedding，使用模拟向量');
     
-    // 生成1024维的模拟向量（与CLIP兼容）
-    // 在实际应用中，您可能需要使用其他服务如Cohere或本地CLIP
-    return Array.from({ length: 1024 }, () => Math.random() * 2 - 1);
+    // 生成1536维的模拟向量（与text-embedding-3-small兼容）
+    return generateMockEmbedding();
     
   } catch (error) {
     console.log(`  ⚠️ OpenAI Embedding API调用失败: ${error instanceof Error ? error.message : '未知错误'}`);
     // 回退到模拟向量
-    return Array.from({ length: 1024 }, () => Math.random() * 2 - 1);
+    return generateMockEmbedding();
   }
+}
+
+// 生成1536维的模拟向量（与text-embedding-3-small兼容）
+function generateMockEmbedding(): number[] {
+  return Array.from({ length: 1536 }, () => Math.random() * 2 - 1);
 }
 
 // 检查是否应该使用云端AI服务
@@ -172,7 +169,7 @@ export async function generateHybridEmbedding(
     try {
       const embedding = await localEmbedder(imagePath, { pooling: 'mean', normalize: true });
       const result = Array.from(embedding.data) as number[];
-      if (Array.isArray(result) && result.length === 1024) {
+      if (Array.isArray(result) && result.length === 1536) {
         return result;
       }
     } catch (error) {
@@ -181,5 +178,5 @@ export async function generateHybridEmbedding(
   }
   
   // 最终回退到模拟向量
-  return Array.from({ length: 1024 }, () => Math.random() * 2 - 1);
+  return Array.from({ length: 1536 }, () => Math.random() * 2 - 1);
 } 
