@@ -1,0 +1,10 @@
+# Python依赖包列表
+# 用于绘本插图数据处理脚本
+
+# Supabase Python客户端
+supabase>=2.3.0
+
+# OpenAI Python客户端
+openai>=1.50.0
+
+# 其他依赖包会自动安装合适版本
