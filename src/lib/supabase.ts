@@ -29,6 +29,14 @@ export function getSupabaseClient(): SupabaseClient {
         headers: {
           'X-Client-Info': 'image-processor-client',
           'Connection': 'keep-alive'
+        },
+        // 设置全局超时
+        fetch: (url, options = {}) => {
+          return fetch(url, {
+            ...options,
+            // 设置35秒超时（略长于数据库函数超时）
+            signal: AbortSignal.timeout(35000)
+          });
         }
       },
       db: {

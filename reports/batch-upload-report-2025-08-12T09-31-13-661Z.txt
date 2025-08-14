@@ -1,0 +1,347 @@
+
+批量上传处理报告
+==================
+开始时间: 2025/8/12 17:14:38
+结束时间: 2025/8/12 17:31:13
+处理时长: 16分34秒
+
+处理统计:
+- 总文件数: 330
+- 成功处理: 309
+- 处理失败: 21  
+- 跳过文件: 0
+- 成功率: 93.64%
+
+失败文件列表:
+- 1203-黑夜怕怕.jpg: 向量嵌入生成失败: 403 Your account balance is insufficient. Please recharge your account to continue using the API. (tid: 2025081209304931865033565771052)
+- 1217-小蝌蚪找妈妈.jpg: 增强AI描述生成失败: 403 Your account balance is insufficient. Please recharge your account to continue using the API. (tid: 2025081209305813821430740656037)
+- 1214-冬至·饺子宴7.jpg: 增强AI描述生成失败: 403 Your account balance is insufficient. Please recharge your account to continue using the API. (tid: 2025081209305842037405324906107)
+- 1216-图说传统节日.jpg: 增强AI描述生成失败: 403 Your account balance is insufficient. Please recharge your account to continue using the API. (tid: 2025081209305848377804158112713)
+- 1213-冬至·饺子宴6.jpg: 增强AI描述生成失败: 403 Your account balance is insufficient. Please recharge your account to continue using the API. (tid: 2025081209305873698734412872020)
+- 1211-冬至·饺子宴3.jpg: 增强AI描述生成失败: 403 Your account balance is insufficient. Please recharge your account to continue using the API. (tid: 2025081209305918290073387572705)
+- 1210-冬至·饺子宴2.jpg: 增强AI描述生成失败: 403 Your account balance is insufficient. Please recharge your account to continue using the API. (tid: 2025081209305953300609950552299)
+- 1212-冬至·饺子宴4.jpg: 增强AI描述生成失败: 403 Your account balance is insufficient. Please recharge your account to continue using the API. (tid: 2025081209305960268574805922345)
+- 1218-年兽来了-1.jpg: 增强AI描述生成失败: 403 Your account balance is insufficient. Please recharge your account to continue using the API. (tid: 2025081209305993963040307847482)
+- 1215-冬至·饺子宴8.jpg: 增强AI描述生成失败: 403 Your account balance is insufficient. Please recharge your account to continue using the API. (tid: 202508120931001948821723503805)
+- 1219-年兽来了.jpg: 增强AI描述生成失败: 403 Your account balance is insufficient. Please recharge your account to continue using the API. (tid: 2025081209310263701842846978725)
+- 1229-红礼盒-1.jpg: 增强AI描述生成失败: 403 Your account balance is insufficient. Please recharge your account to continue using the API. (tid: 2025081209311127889603641785277)
+- 1227-百年百部-2-金瓜儿银豆儿-1.jpg: 增强AI描述生成失败: 403 Your account balance is insufficient. Please recharge your account to continue using the API. (tid: 2025081209311167390416295396269)
+- 1225-猴子捞月-2.jpg: 增强AI描述生成失败: 403 Your account balance is insufficient. Please recharge your account to continue using the API. (tid: 2025081209311168718735406417121)
+- 1223-爷爷是个笨小孩-3（关于“衰老”与“遗忘”，“爱的反哺”与“陪伴”).jpg: 增强AI描述生成失败: 403 Your account balance is insufficient. Please recharge your account to continue using the API. (tid: 2025081209311170644570043296226)
+- 1221-爷爷是个笨小孩-1（关于“衰老”与“遗忘”，“爱的反哺”与“陪伴”).jpg: 增强AI描述生成失败: 403 Your account balance is insufficient. Please recharge your account to continue using the API. (tid: 2025081209311188508728769699702)
+- 1220-没事，你掉下来我会接住你4.jpg: 增强AI描述生成失败: 403 Your account balance is insufficient. Please recharge your account to continue using the API. (tid: 2025081209311193786655577102998)
+- 1226-猴子捞月.jpg: 增强AI描述生成失败: 403 Your account balance is insufficient. Please recharge your account to continue using the API. (tid: 2025081209311212966203762739858)
+- 1224-猴子捞月-1.jpg: 增强AI描述生成失败: 403 Your account balance is insufficient. Please recharge your account to continue using the API. (tid: 2025081209311222223980472910017)
+- 1228-百年百部-2-金瓜儿银豆儿-2.jpg: 增强AI描述生成失败: 403 Your account balance is insufficient. Please recharge your account to continue using the API. (tid: 2025081209311315410154419572034)
+- 1222-爷爷是个笨小孩-2（关于“衰老”与“遗忘”，“爱的反哺”与“陪伴”).jpg: 增强AI描述生成失败: 403 Your account balance is insufficient. Please recharge your account to continue using the API. (tid: 2025081209311348764861872982170)
+
+成功处理的文件:
+- 906-我的裤子飞走了2.jpg
+- 904-我的山野中国-一双大鞋3.jpg
+- 1230-老鼠嫁女.jpg
+- 905-我的裤子飞走了1.jpg
+- 903-我的山野中国-一双大鞋2.jpg
+- 907-我遇见了一只小灰狼1.jpg
+- 909-我遇见了一只小灰狼3.jpg
+- 901-我的叶子.jpg
+- 902-我的山野中国-一双大鞋1.jpg
+- 908-我遇见了一只小灰狼2.jpg
+- 911-森林都知道.jpg
+- 913-济南的冬天-2.jpg
+- 915-灶王节的故事.jpg
+- 914-济南的冬天-3.jpg
+- 916-猜猜我有多爱你—冬天的故事.jpg
+- 919-登陆火星!3.jpg
+- 918-登陆火星!2.jpg
+- 910-我遇见了一只小灰狼4.jpg
+- 912-济南的冬天-1.jpg
+- 917-登陆火星!1.jpg
+- 921-胖子和瘦子-2.jpg
+- 929-鄂伦春的熊-4.jpg
+- 920-胖子和瘦子-1.jpg
+- 924-迟到了一年的包裹1.jpg
+- 927-那里有条高高的河.jpg
+- 923-过年-3.jpg
+- 928-鄂伦春的熊-2.jpg
+- 925-迟到了一年的包裹2.jpg
+- 922-过年-1.jpg
+- 926-迟到了一年的包裹3.jpg
+- 933-鄂伦春的熊.jpg
+- 930-鄂伦春的熊-5.jpg
+- 932-鄂伦春的熊-7.jpg
+- 938-雪花落呀落2.jpg
+- 934-阳阳和星星-2.jpg
+- 931-鄂伦春的熊-6.jpg
+- 935-阳阳和星星.jpg
+- 936-雪地上雪地下.jpg
+- 937-雪花落呀落1.jpg
+- 939-雪龙号出发了.jpg
+- 941-马莱卡的第一次大冒险3.jpg
+- 943-龙的高跷1.jpg
+- 944-龙的高跷2.jpg
+- 940-飞吧，飞过最高的山-3.jpg
+- 945-一本没有故事的书1.jpg
+- 949-30000个西瓜逃跑了4.jpg
+- 946-一本没有故事的书1_upscayl_5x_realesrgan-x4plus.jpg
+- 947-一本没有故事的书2.jpg
+- 942-龙的高跷.jpg
+- 948-一本没有故事的书3.jpg
+- 955-一棵橡树的两百年.jpg
+- 959-三重溪镇的图书管理员1.jpg
+- 951-一只想飞的羊.jpg
+- 957-一辆好努力好努力的巴士-2.jpg
+- 953-一家人看世界 去非洲看动物2.jpg
+- 958-一辆好努力好努力的巴士-3.jpg
+- 956-一辆好努力好努力的巴士-1.jpg
+- 952-一只狐狸.jpg
+- 954-一家好认真好认真的餐厅2.jpg
+- 950-一个部落的孩子(勇敢做自己）1.jpg
+- 964-乔纳斯与海1.jpg
+- 961-不可思议的旅程-1.jpg
+- 966-乔纳斯与海3.jpg
+- 965-乔纳斯与海2.jpg
+- 960-三重溪镇的图书管理员2.jpg
+- 967-二十个哈欠.jpg
+- 969-仅仅是个梦.jpg
+- 968-亲亲祖父母.jpg
+- 963-世界上最好的爸爸.jpg
+- 962-不可思议的旅程.jpg
+- 972-今晚谁哄我睡觉.jpg
+- 976-会说爱的手-1.jpg
+- 977-会飞的鱼灯2.jpg
+- 973-从我家可以看到大海-3.jpg
+- 978-会飞的鱼灯3.jpg
+- 979-住在树上的猫.jpg
+- 975-以梦为马1.jpg
+- 970-今天猫咪看家.jpg
+- 971-今晚谁哄我睡觉-1.jpg
+- 974-以梦为马.jpg
+- 987-你是我的唯一1.jpg
+- 981-你准备好见爸爸了吗？.jpg
+- 988-你是我的唯一2.jpg
+- 986-你是我的唯一.jpg
+- 989-你要换大床了.jpg
+- 985-你怕黑吗？其实黑很怕你3.jpg
+- 982-你怕黑吗？其实黑很怕你.jpg
+- 984-你怕黑吗？其实黑很怕你2.jpg
+- 980-作业本疯了！.jpg
+- 983-你怕黑吗？其实黑很怕你1.jpg
+- 998-卡卡的小卡车系列4.jpg
+- 997-北京的庙会.jpg
+- 992-凌晨4点，他们在做什么？-2.jpg
+- 999-卡卡的小卡车系列5.jpg
+- 996-别让怪兽抓孩子2.jpg
+- 990-你要换大床了2.jpg
+- 994-凡·高和小花狗2.jpg
+- 993-凡·高和小花狗1.jpg
+- 995-别让怪兽抓孩子1.jpg
+- 991-偷梦的妖精.jpg
+- 1003-和爸爸一起读书.jpg
+- 1000-可以不睡觉，一直玩吗.jpg
+- 1001-吃掉黑暗的怪兽.jpg
+- 1006-咚咚咚！是谁啊？.jpg
+- 1005-和爸爸一起读书1_upscayl_4x_ultramix_balanced.jpg
+- 1007-喊月亮3.jpg
+- 1008-嗨，路易！1.jpg
+- 1009-嗨，路易！2.jpg
+- 1004-和爸爸一起读书1.jpg
+- 1002-味儿.jpg
+- 1013-因为爸爸爱你.jpg
+- 1019-圣诞节到了吗.jpg
+- 1012-因为爷爷奶奶爱你.jpg
+- 1014-因为爸爸爱你2.jpg
+- 1010-嗨，路易！3.jpg
+- 1011-回老家过年.jpg
+- 1015-因为爸爸爱你3.jpg
+- 1018-圣诞节到了吗-1.jpg
+- 1016-图书馆去旅行1.jpg
+- 1017-圣诞奇迹.jpg
+- 1025-大喷嚏1.jpg
+- 1027-大海-1.jpg
+- 1020-城市的夜晚1.jpg
+- 1024-夜盒子.jpg
+- 1021-城市的夜晚2.jpg
+- 1028-大海遇见天空.jpg
+- 1022-城市的夜晚3.jpg
+- 1026-大大行，我也行.jpg
+- 1023-城市的夜晚4.jpg
+- 1029-大海遇见天空1.jpg
+- 1038-好困好困的故事-2.jpg
+- 1036-好厉害的睡姿！1.jpg
+- 1033-天上掉下一头鲸.jpg
+- 1035-好厉害的睡姿！.jpg
+- 1039-好想和你在一起.jpg
+- 1030-大海遇见天空4.jpg
+- 1037-好困好困的故事-1.jpg
+- 1032-大雪有多大-3.jpg
+- 1031-大雪天.jpg
+- 1034-天动说.jpg
+- 1044-如果你住在这里：世界各地的房子-1.jpg
+- 1040-好想要那样一双鞋1.jpg
+- 1049-妈妈的爱-3.jpg
+- 1046-妈妈的吻-2.jpg
+- 1041-好想要那样一双鞋2.jpg
+- 1042-好想要那样一双鞋3.jpg
+- 1048-妈妈的爱-2.jpg
+- 1043-如果你不早点睡觉.jpg
+- 1047-妈妈的爱-1.jpg
+- 1045-如果你住在这里：消失的城市.jpg
+- 1057-安静-1.jpg
+- 1053-妈妈肚子里有座房子1.jpg
+- 1055-妈妈肚子里有座房子4.jpg
+- 1051-妈妈的爱.jpg
+- 1050-妈妈的爱-4.jpg
+- 1054-妈妈肚子里有座房子2.jpg
+- 1052-妈妈的魔法肚子.jpg
+- 1059-安静.jpg
+- 1058-安静-2.jpg
+- 1056-安野光雅的十二堂绘画课.jpg
+- 1065-小兔汤姆系列11.jpg
+- 1061-宝贝老板又来了-1.jpg
+- 1068-小熊家的不速之客.jpg
+- 1063-将来有一天1.jpg
+- 1069-小魔怪要上学1.jpg
+- 1067-小熊和最好的爸爸-看世界.jpg
+- 1060-完美妈妈.jpg
+- 1064-小兔汤姆和大坏狼.jpg
+- 1066-小兔汤姆系列12.jpg
+- 1062-宝贝老板又来了.jpg
+- 1075-总算安静了-1.jpg
+- 1070-尼莫船长1.jpg
+- 1077-情绪天使守护我-1.jpg
+- 1076-总算安静了-2.jpg
+- 1078-情绪天使守护我.jpg
+- 1071-尼莫船长2.jpg
+- 1079-愿望树.jpg
+- 1072-尼莫船长3.jpg
+- 1074-平克和赛伊2.jpg
+- 1073-尼莫船长4.jpg
+- 1084-我的宝贝，我爱你.jpg
+- 1089-我要长大！1.jpg
+- 1086-我被忘在了月亮上.jpg
+- 1085-我的情绪小怪兽.jpg
+- 1087-我要长大！-2.jpg
+- 1082-我家有个小神仙2.jpg
+- 1083-我的企鹅爸爸1.jpg
+- 1081-我家有个小神仙1.jpg
+- 1080-我们把天睡亮了.jpg
+- 1088-我要长大！.jpg
+- 1090-收拾房间的理由.jpg
+- 1097-月亮奶-2.jpg
+- 1093-晚安，宝贝.jpg
+- 1094-晚安，工地上的车-1.jpg
+- 1091-时间都去哪儿了.jpg
+- 1092-昭君出塞1.jpg
+- 1095-晚安，工地上的车.jpg
+- 1098-月亮猫.jpg
+- 1096-月亮奶-1.jpg
+- 1099-月光-1.jpg
+- 1105-机器人宝宝-学会放手孩子.jpg
+- 1102-月光下的仙人掌2.jpg
+- 1106-机器人宝宝2-学会放手孩子.jpg
+- 1109-梦幻大飞行.jpg
+- 1104-月夜的大冒险-2.jpg
+- 1100-月光-2.jpg
+- 1108-桌子底下有个大家伙3.jpg
+- 1101-月光下的仙人掌1.jpg
+- 1103-月夜的大冒险-1.jpg
+- 1107-机器人宝宝3-学会放手孩子.jpg
+- 1111-森林图书馆2.jpg
+- 1117-汤姆和伤心的鲁鲁.jpg
+- 1110-森林图书馆1.jpg
+- 1113-森林里度过的夏天.jpg
+- 1118-汤姆的噩梦.jpg
+- 1116-永远爱你.jpg
+- 1112-森林图书馆3.jpg
+- 1119-汤姆的小妹妹.jpg
+- 1115-橘子火车.jpg
+- 1114-森林里度过的夏天2.jpg
+- 1125-爱上钢琴·练不好没关系.jpg
+- 1124-点点的夏天.jpg
+- 1122-海象蜗蜗爱唱歌.jpg
+- 1121-沙沙沙，发芽啦！2.jpg
+- 1129-爷爷的祈祷-多动症儿童.jpg
+- 1120-汤姆的小妹妹2.jpg
+- 1126-爱书的小狗-1.jpg
+- 1123-灯塔守护者1.jpg
+- 1127-爱书的小狗.jpg
+- 1128-爱心叶：四季流转和生命轮回的故事.jpg
+- 1133-爸爸.jpg
+- 1139-爸爸变成了透明人6.jpg
+- 1134-爸爸变成了透明人1.jpg
+- 1131-爷爷的祈祷1-多动症儿童.jpg
+- 1130-爷爷的祈祷.jpg
+- 1136-爸爸变成了透明人3.jpg
+- 1132-爷爷的祈祷2-多动症儿童.jpg
+- 1137-爸爸变成了透明人4.jpg
+- 1135-爸爸变成了透明人2.jpg
+- 1138-爸爸变成了透明人5.jpg
+- 1146-玛丽昂，再讲一个故事吧！1.jpg
+- 1144-爸爸的秘密3.jpg
+- 1149-甜点，真好吃.jpg
+- 1143-爸爸的秘密2.jpg
+- 1147-玩具船去航行-1.jpg
+- 1141-爸爸的白头发2.jpg
+- 1145-狐说伊索寓言.jpg
+- 1140-爸爸的拥抱.jpg
+- 1142-爸爸的秘密1.jpg
+- 1148-玩具船去航行.jpg
+- 1155-窗-1.jpg
+- 1152-睡觉吧，宝贝-2.jpg
+- 1154-稻草人与乌鸦.jpg
+- 1150-田鼠西西弗.jpg
+- 1156-窗-2.jpg
+- 1158-窗-4.jpg
+- 1153-稻草人与乌鸦-1.jpg
+- 1157-窗-3.jpg
+- 1159-窗-5.jpg
+- 1151-睡不着觉的小兔子.jpg
+- 1169-老鼠和鼹鼠：有我的礼物吗1.jpg
+- 1162-给艾米的信1.jpg
+- 1161-窗.jpg
+- 1163-给艾米的信2.jpg
+- 1164-给艾米的信3.jpg
+- 1168-老鼠和鼹鼠：有我的礼物吗.jpg
+- 1167-维利床下的鬼-2.jpg
+- 1160-窗-6.jpg
+- 1166-维利床下的鬼-1.jpg
+- 1165-给艾米的信4.jpg
+- 1179-过年-2.jpg
+- 1173-蛋糕逃跑啦！5.jpg
+- 1177-谢谢你，小小的朋友.jpg
+- 1175-谁是睡觉冠军1.jpg
+- 1174-蛋糕逃跑啦！6.jpg
+- 1171-蛋糕逃跑啦！3.jpg
+- 1176-谁说一定要用蓝色画天空-1.jpg
+- 1178-贝蒂和大山 海上有座蛋糕山1.jpg
+- 1170-莫莉和美美.jpg
+- 1172-蛋糕逃跑啦！4.jpg
+- 1189-雪地下面的朋友们-4.jpg
+- 1183-防风镜（防欺凌）1.jpg
+- 1186-防风镜（防欺凌）4.jpg
+- 1187-雪地下面的朋友们-2.jpg
+- 1181-鄂温克的驼鹿-2.jpg
+- 1188-雪地下面的朋友们-3.jpg
+- 1185-防风镜（防欺凌）3.jpg
+- 1182-问号老鼠小萝拉-田野里的哲学启蒙课4.jpg
+- 1180-邂逅风景.jpg
+- 1184-防风镜（防欺凌）2.jpg
+- 1195-雪花的方向-3.jpg
+- 1194-雪花的方向-2.jpg
+- 1199-马蒂斯的剪刀.jpg
+- 1191-雪地下面的朋友们-6.jpg
+- 1196-雪花的方向.jpg
+- 1190-雪地下面的朋友们-5.jpg
+- 1193-雪花的方向-1.jpg
+- 1197-青蛙小弟和青蛙小妹系列1.jpg
+- 1192-雪花人-1.jpg
+- 1198-青蛙小弟和青蛙小妹系列2.jpg
+- 1204-黑鼬鼠的深夜食堂1.jpg
+- 1207-元宵节的故事-1.jpg
+- 1201-鹿角舟1.jpg
+- 1202-鹿角舟2.jpg
+- 1206-鼹鼠与小鸟3.jpg
+- 1209-元宵节的故事.jpg
+- 1208-元宵节的故事-2.jpg
+- 1205-黑鼬鼠的深夜食堂2.jpg
+- 1200-驴子图书馆.jpg

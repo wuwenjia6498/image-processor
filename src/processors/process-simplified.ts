@@ -227,9 +227,9 @@ async function main() {
             id: record.filename.replace(/\.[^/.]+$/, ""),
             filename: record.filename,
             book_title: record.book_title,
-            ai_description: aiDescription,
+            original_description: aiDescription,
             image_url: publicUrl,
-            vector_embedding: imageVector,
+            original_embedding: imageVector,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           });

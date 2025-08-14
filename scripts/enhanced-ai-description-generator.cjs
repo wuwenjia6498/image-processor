@@ -331,8 +331,8 @@ async function updateRecordEnhancedDescription(record, index, total) {
     const { error: dbError } = await supabase
       .from('illustrations_optimized')
       .update({
-        ai_description: enhancedDescription,
-        vector_embedding: newEmbedding,
+        original_description: enhancedDescription,
+        original_embedding: newEmbedding,
         updated_at: new Date().toISOString()
       })
       .eq('id', record.id);
@@ -351,7 +351,7 @@ async function updateRecordEnhancedDescription(record, index, total) {
         metadata: {
           filename: record.filename,
           book_title: record.book_title,
-          ai_description: enhancedDescription,
+          original_description: enhancedDescription,
           image_url: record.image_url
         }
       }]);

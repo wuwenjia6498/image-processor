@@ -1,13 +1,14 @@
 import { supabase } from './supabaseClient';
 import { generateImageDescription } from '../services/frontend-ai-service';
 import { imageDescriptionToVector } from '../services/unified-embedding';
+import { generateCompleteThemeData, ThemeDescriptions, ThemeEmbeddings } from '../services/theme-description-service';
 
 // 处理后的插图结果接口
 export interface ProcessedImage {
   id: string;
   filename: string;
   bookTitle: string;
-  aiDescription: string;
+  aiDescription: string; // 保持前端接口名称不变，方便组件使用
   bookTheme: string;
   status: 'success' | 'error';
   imageUrl: string;
@@ -249,8 +250,28 @@ export const uploadImages = async (
         console.error('⚠️ 向量嵌入生成失败，将继续保存其他数据:', error);
         // 向量嵌入失败不影响整体流程，继续保存其他数据
       }
+
+      // 6. 生成7个主题维度的描述和向量（带重试）
+      let themeDescriptions: ThemeDescriptions | null = null;
+      let themeEmbeddings: ThemeEmbeddings | null = null;
       
-      // 6. 保存到Supabase数据库（带重试）
+      try {
+        console.log('🎭 开始生成主题维度数据...');
+        const themeData = await retryOperation(async () => {
+          return await generateCompleteThemeData(file, bookTitle, aiDescription);
+        }, 2, 3000);
+        
+        themeDescriptions = themeData.descriptions;
+        themeEmbeddings = themeData.embeddings;
+        console.log('✅ 主题维度数据生成成功');
+      } catch (error) {
+        console.error('⚠️ 主题维度数据生成失败，将使用默认值:', error);
+        // 生成默认的主题描述
+        themeDescriptions = generateDefaultThemeDescriptions(bookTitle, aiDescription);
+        themeEmbeddings = generateNullThemeEmbeddings();
+      }
+      
+      // 7. 保存到Supabase数据库（带重试）
       console.log('💾 开始保存到数据库...');
       await retryOperation(async () => {
         const { error: dbError } = await supabase
@@ -260,8 +281,24 @@ export const uploadImages = async (
             filename: originalFilename,
             book_title: bookTitle,
             image_url: publicUrl,
-            ai_description: aiDescription,
-            vector_embedding: vectorEmbedding,
+            original_description: aiDescription,
+            original_embedding: vectorEmbedding ? `[${vectorEmbedding.join(',')}]` : null,
+            // 7个主题描述字段
+            theme_philosophy: themeDescriptions?.theme_philosophy || null,
+            action_process: themeDescriptions?.action_process || null,
+            interpersonal_roles: themeDescriptions?.interpersonal_roles || null,
+            edu_value: themeDescriptions?.edu_value || null,
+            learning_strategy: themeDescriptions?.learning_strategy || null,
+            creative_play: themeDescriptions?.creative_play || null,
+            scene_visuals: themeDescriptions?.scene_visuals || null,
+            // 7个主题向量字段
+            theme_philosophy_embedding: themeEmbeddings?.theme_philosophy_embedding ? `[${themeEmbeddings.theme_philosophy_embedding.join(',')}]` : null,
+            action_process_embedding: themeEmbeddings?.action_process_embedding ? `[${themeEmbeddings.action_process_embedding.join(',')}]` : null,
+            interpersonal_roles_embedding: themeEmbeddings?.interpersonal_roles_embedding ? `[${themeEmbeddings.interpersonal_roles_embedding.join(',')}]` : null,
+            edu_value_embedding: themeEmbeddings?.edu_value_embedding ? `[${themeEmbeddings.edu_value_embedding.join(',')}]` : null,
+            learning_strategy_embedding: themeEmbeddings?.learning_strategy_embedding ? `[${themeEmbeddings.learning_strategy_embedding.join(',')}]` : null,
+            creative_play_embedding: themeEmbeddings?.creative_play_embedding ? `[${themeEmbeddings.creative_play_embedding.join(',')}]` : null,
+            scene_visuals_embedding: themeEmbeddings?.scene_visuals_embedding ? `[${themeEmbeddings.scene_visuals_embedding.join(',')}]` : null,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           });
@@ -344,6 +381,32 @@ export const uploadImages = async (
   console.log(`\n📊 批量处理完成: ${results.filter(r => r.status === 'success').length}/${results.length} 成功`);
   return results;
 };
+
+// 生成默认主题描述（当AI生成失败时使用）
+function generateDefaultThemeDescriptions(bookTitle: string, originalDescription: string): ThemeDescriptions {
+  return {
+    theme_philosophy: `这幅来自《${bookTitle}》的插图蕴含着深刻的人生智慧和成长启示。`,
+    action_process: `插图展现了《${bookTitle}》中人物的行动过程和成长历程。`,
+    interpersonal_roles: `画面描绘了《${bookTitle}》中温馨的人际关系和情感连接。`,
+    edu_value: `这幅插图具有重要的教育价值，能够启发读者的学习和思考。`,
+    learning_strategy: `插图展示了有效的阅读学习策略和思维方法。`,
+    creative_play: `画面充满创意和想象力，激发读者的创造性思维。`,
+    scene_visuals: `插图运用精美的视觉元素营造出独特的艺术氛围。`
+  };
+}
+
+// 生成空的主题向量（当向量生成失败时使用）
+function generateNullThemeEmbeddings(): ThemeEmbeddings {
+  return {
+    theme_philosophy_embedding: null,
+    action_process_embedding: null,
+    interpersonal_roles_embedding: null,
+    edu_value_embedding: null,
+    learning_strategy_embedding: null,
+    creative_play_embedding: null,
+    scene_visuals_embedding: null
+  };
+}
 
 // 处理已上传的插图
 export const processImages = async (imageIds: string[]): Promise<void> => {

@@ -6,8 +6,13 @@ let openai: OpenAI | null = null;
 
 function initializeOpenAI(): OpenAI {
   if (!openai) {
-    const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
-    const baseURL = import.meta.env.VITE_OPENAI_BASE_URL;
+    // 兼容浏览器和Node.js环境的环境变量读取
+    const apiKey = (typeof import.meta !== 'undefined' && import.meta.env) 
+      ? import.meta.env.VITE_OPENAI_API_KEY 
+      : process.env.VITE_OPENAI_API_KEY;
+    const baseURL = (typeof import.meta !== 'undefined' && import.meta.env) 
+      ? import.meta.env.VITE_OPENAI_BASE_URL 
+      : process.env.VITE_OPENAI_BASE_URL;
     
     if (!apiKey) {
       throw new Error('VITE_OPENAI_API_KEY environment variable is required');
@@ -26,6 +31,52 @@ function initializeOpenAI(): OpenAI {
     openai = new OpenAI(config);
   }
   return openai;
+}
+
+// 网络搜索绘本信息（与后台batch-upload-enhanced.cjs完全一致）
+async function searchBookInfoWithAI(bookTitle: string): Promise<string> {
+  try {
+    console.log(`🔍 搜索绘本《${bookTitle}》的核心信息...`);
+    
+    const client = initializeOpenAI();
+    const response = await client.chat.completions.create({
+      model: "gpt-4o", // 与后台一致
+      messages: [
+        {
+          role: "user",
+          content: `请详细介绍绘本《${bookTitle}》的以下信息：
+
+1. **故事主题和核心内容**：这本绘本讲述了什么故事？主要情节是什么？
+
+2. **教育意义和价值观**：这本绘本想要传达给儿童什么教育意义？培养什么品质？
+
+3. **艺术风格和视觉特色**：这本绘本的插画风格是什么？色彩特点如何？
+
+4. **目标年龄和适用场景**：适合什么年龄段的儿童？在什么场景下阅读？
+
+5. **情感基调和氛围**：整本书的情感氛围是怎样的？温馨、欢快、感人还是其他？
+
+请用中文回答，每个方面都要详细说明。如果你不确定某本绘本的具体信息，请基于书名进行合理推测，并说明这是推测。`
+        }
+      ],
+      max_tokens: 800, // 与后台一致
+      temperature: 0.7  // 与后台一致
+    });
+
+    const bookInfo = response.choices[0]?.message?.content || '未找到相关绘本信息';
+    console.log(`✅ 绘本信息搜索完成`);
+    return bookInfo;
+  } catch (error) {
+    console.error(`❌ 搜索绘本信息失败:`, error);
+    // 降级到本地主题信息
+    const localTheme = matchBookTheme(bookTitle);
+    return `基于本地信息推测的《${bookTitle}》信息：
+主题内容：${localTheme.theme}
+艺术风格：${localTheme.style}
+情感基调：${localTheme.emotionalTone}
+教育价值：${localTheme.educationalValue}
+${localTheme.culturalContext ? `文化背景：${localTheme.culturalContext}` : ''}`;
+  }
 }
 
 // 绘本主题数据库
@@ -124,33 +175,28 @@ function matchBookTheme(bookTitle: string): {
   };
 }
 
-// 生成针对绘本的精准提示词
-function generateBookPrompt(bookTitle: string, bookTheme: any): string {
-  return `请分析这张来自绘本《${bookTitle}》的插图，并结合绘本的整体主题进行描述。
+// 生成与后台完全一致的专业提示词
+function generateEnhancedBookPrompt(bookTitle: string, bookInfo: string): string {
+  return `基于以下绘本背景信息，请为这张来自绘本《${bookTitle}》的插图生成一个既准确描述画面内容又体现绘本主旨的智能描述：
 
 【绘本背景信息】
-- 主题：${bookTheme.theme}
-- 艺术风格：${bookTheme.style}
-- 情感基调：${bookTheme.emotionalTone}
-- 教育价值：${bookTheme.educationalValue}
-${bookTheme.culturalContext ? `- 文化背景：${bookTheme.culturalContext}` : ''}
+${bookInfo}
 
-【描述要求】
-请从以下角度进行描述，确保与绘本的主旨和风格保持一致：
+请生成一个400-600字的综合描述，要求：
 
-1. **画面内容分析**：结合绘本主题，描述画面中的主要元素和场景
-2. **角色特征**：分析人物/动物的外观、表情和动作，体现绘本的情感基调
-3. **艺术风格**：描述色彩运用、构图特点，与绘本的整体风格呼应
-4. **情感表达**：分析画面传达的情感，与绘本的主旨相呼应
-5. **教育意义**：结合绘本的教育价值，说明这幅插图的教育作用
+1. **画面描述准确性**：准确描述图片中的具体内容，不能编造不存在的元素
 
-【描述风格】
-- 语言要生动具体，富有感染力
-- 情感表达要与绘本的${bookTheme.emotionalTone}基调一致
-- 要体现${bookTheme.educationalValue}的教育价值
-- 描述要流畅自然，符合绘本阅读的体验
+2. **主题契合度**：描述要体现绘本的核心主题和教育价值
 
-请用一段流畅的中文描述，确保与绘本《${bookTitle}》的整体风格和主旨高度吻合。`;
+3. **情感氛围一致**：描述的情感基调要与绘本整体氛围相符
+
+4. **教育价值体现**：分析这幅插图在绘本中的教育意义
+
+5. **艺术风格分析**：结合绘本的艺术特色分析画面的视觉效果
+
+6. **儿童视角考虑**：从儿童的角度理解和解读画面内容
+
+请用优美流畅的中文写作，分为3-4个自然段，每段都有明确的主题重点。`;
 }
 
 // 将文件转换为 base64
@@ -171,6 +217,24 @@ async function fileToBase64(file: File): Promise<string> {
 // 通过 URL 获取图片并转换为 base64
 async function urlToBase64(imageUrl: string): Promise<{ base64: string, mimeType: string }> {
   try {
+    // 如果是data URL，直接解析
+    if (imageUrl.startsWith('data:')) {
+      const [header, base64Content] = imageUrl.split(',');
+      const mimeType = header.match(/data:([^;]+)/)?.[1] || 'image/jpeg';
+      return { base64: base64Content, mimeType };
+    }
+
+    // 在Node.js环境下使用fetch和Buffer
+    if (typeof window === 'undefined') {
+      const response = await fetch(imageUrl);
+      const arrayBuffer = await response.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      const base64Content = buffer.toString('base64');
+      const mimeType = response.headers.get('content-type') || 'image/jpeg';
+      return { base64: base64Content, mimeType };
+    }
+
+    // 在浏览器环境下使用FileReader
     const response = await fetch(imageUrl);
     const blob = await response.blob();
     
@@ -191,13 +255,11 @@ async function urlToBase64(imageUrl: string): Promise<{ base64: string, mimeType
   }
 }
 
-// 基于 GPT-4V 的图片描述生成（前端版本）
+// 基于 GPT-4V 的图片描述生成（前端版本 - 与后台完全一致的两步骤流程）
 export async function generateImageDescription(
   input: File | string, // 支持文件对象或图片URL
   bookTitle: string
 ): Promise<string> {
-  
-  const bookTheme = matchBookTheme(bookTitle);
   
   try {
     const client = initializeOpenAI();
@@ -217,13 +279,20 @@ export async function generateImageDescription(
       mimeType = result.mimeType;
     }
     
-    console.log(`🌐 调用 GPT-4V API 生成《${bookTitle}》的插图描述...`);
-    console.log(`📖 识别绘本主题：${bookTheme.theme}`);
+    console.log(`🌐 开始为《${bookTitle}》生成增强AI描述...`);
     
-    const prompt = generateBookPrompt(bookTitle, bookTheme);
+    // 步骤1: 搜索绘本信息（与后台一致）
+    const bookInfo = await searchBookInfoWithAI(bookTitle);
+    
+    // 短暂延迟避免API限流（与后台一致）
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // 步骤2: 分析插图并生成增强描述（与后台一致）
+    console.log(`🎨 结合绘本主旨生成智能描述...`);
+    const prompt = generateEnhancedBookPrompt(bookTitle, bookInfo);
     
     const response = await client.chat.completions.create({
-      model: "gpt-4o-mini", // 使用支持视觉的模型
+      model: "gpt-4o", // 与后台完全一致
       messages: [
         {
           role: "user",
@@ -235,27 +304,29 @@ export async function generateImageDescription(
             {
               type: "image_url",
               image_url: {
-                url: `data:${mimeType};base64,${base64Image}`
+                url: `data:${mimeType};base64,${base64Image}`,
+                detail: "high" // 使用高精度图像分析
               }
             }
           ]
         }
       ],
-      max_tokens: 800,
-      temperature: 0.7,
+      max_tokens: 1000, // 与后台保持一致
+      temperature: 0.7, // 与后台保持一致
     });
 
     const description = response.choices[0]?.message?.content || 
-      generateFallbackDescription(bookTitle, bookTheme);
+      `来自《${bookTitle}》的精美插图`;
     
-    console.log(`✅ GPT-4V 描述生成成功: ${description.substring(0, 60)}...`);
+    console.log(`✅ 增强AI描述生成成功: ${description.substring(0, 60)}...`);
     
     return description;
     
   } catch (error) {
-    console.error(`⚠️ GPT-4V API 调用失败:`, error);
+    console.error(`⚠️ 增强AI描述生成失败:`, error);
     
-    // 回退到基于主题的模拟描述
+    // 回退到本地主题描述
+    const bookTheme = matchBookTheme(bookTitle);
     return generateFallbackDescription(bookTitle, bookTheme);
   }
 }

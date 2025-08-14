@@ -409,9 +409,9 @@ async function processImageFile(imagePath, index, total) {
         id: recordId,
         filename: filename,
         book_title: bookTitle,
-        ai_description: aiDescription,  // 使用 ai_description 而不是 description
+        original_description: aiDescription,  // 存储原始AI描述
         image_url: publicUrl,
-        vector_embedding: embedding, // 添加这一行！
+        original_embedding: embedding, // 添加这一行！
         created_at: new Date().toISOString()
       })
       .select()
@@ -428,7 +428,7 @@ async function processImageFile(imagePath, index, total) {
         metadata: {
           filename: filename,
           book_title: bookTitle,
-          ai_description: aiDescription,  // 使用 ai_description 而不是 description
+          original_description: aiDescription,  // 存储原始AI描述
           image_url: publicUrl
         }
       }]);

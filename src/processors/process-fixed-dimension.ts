@@ -88,8 +88,8 @@ async function main() {
         const { error: updateError } = await supabase
           .from('illustrations_optimized')
           .update({
-            ai_description: aiDescription,
-            vector_embedding: imageVector,
+            original_description: aiDescription,
+            original_embedding: imageVector,
             updated_at: new Date().toISOString()
           })
           .eq('id', record.id);

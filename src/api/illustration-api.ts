@@ -78,13 +78,37 @@ async function mockPineconeQuery(vector: number[], topK: number = 10): Promise<a
 
     // 使用真实的图片向量计算相似度
     const results = records
-      .filter(record => record.vector_embedding && record.vector_embedding.length > 0) // 只处理有向量数据的记录
+      .filter(record => record.original_embedding && record.original_embedding.length > 0) // 只处理有向量数据的记录
       .map(record => {
         // 使用数据库中存储的真实向量
-        const imageVector = record.vector_embedding;
+        const imageVector = record.original_embedding;
         
         // 计算余弦相似度
-        const similarity = cosineSimilarity(vector, imageVector);
+        // 确保向量是数字数组格式
+        const queryVector = Array.isArray(vector) ? vector : Array.from(vector);
+        
+        // 处理VECTOR类型字符串 - Supabase返回的VECTOR类型是字符串格式
+        let imageVectorArray: number[];
+        if (typeof imageVector === 'string') {
+          // 解析字符串格式的向量: "[0.1,0.2,0.3,...]"
+          try {
+            imageVectorArray = JSON.parse(imageVector);
+          } catch (error) {
+            console.error('向量字符串解析失败:', error, imageVector.substring(0, 100));
+            return { id: record.id, score: 0, metadata: { filename: record.filename, book_title: record.book_title, description: record.original_description, image_url: record.image_url } };
+          }
+        } else if (Array.isArray(imageVector)) {
+          imageVectorArray = imageVector;
+        } else {
+          imageVectorArray = Array.from(imageVector);
+        }
+        
+        const similarity = cosineSimilarity(queryVector, imageVectorArray);
+        
+        // 向量处理验证
+        if (queryVector.length !== imageVectorArray.length) {
+          console.warn(`⚠️ 向量维度不匹配: 查询向量${queryVector.length}维 vs 图片向量${imageVectorArray.length}维`);
+        }
         
         return {
           id: record.id,
@@ -92,17 +116,30 @@ async function mockPineconeQuery(vector: number[], topK: number = 10): Promise<a
           metadata: {
             filename: record.filename,
             book_title: record.book_title,
-            description: record.ai_description,
+            description: record.original_description,
             image_url: record.image_url
           }
         };
       });
 
-    // 按相似度排序并返回前topK个结果
-    results.sort((a, b) => (b.score || 0) - (a.score || 0));
-    const topResults = results.slice(0, topK);
+    // 过滤掉无效的相似度值（NaN, Infinity等）
+    const validResults = results.filter(r => 
+      r.score !== null && 
+      r.score !== undefined && 
+      !isNaN(r.score) && 
+      isFinite(r.score)
+    );
     
-    console.log(`📊 相似度范围: ${Math.min(...topResults.map(r => r.score)).toFixed(3)} - ${Math.max(...topResults.map(r => r.score)).toFixed(3)}`);
+    // 按相似度排序并返回前topK个结果
+    validResults.sort((a, b) => (b.score || 0) - (a.score || 0));
+    const topResults = validResults.slice(0, topK);
+    
+    if (topResults.length > 0) {
+      const scores = topResults.map(r => r.score);
+      console.log(`📊 相似度范围: ${Math.min(...scores).toFixed(3)} - ${Math.max(...scores).toFixed(3)}`);
+    } else {
+      console.log('📊 没有找到有效的相似度匹配结果');
+    }
     
     return topResults;
     

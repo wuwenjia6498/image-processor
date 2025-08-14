@@ -252,9 +252,9 @@ async function main() {
             age_orientation: record.age_orientation,
             book_theme_summary: record.book_theme_summary,
             book_keywords: pineconeMetadata.book_keywords,
-            ai_description: aiDescription,
+            original_description: aiDescription,
             image_url: publicUrl,
-            vector_embedding: imageVector,
+            original_embedding: imageVector,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           });

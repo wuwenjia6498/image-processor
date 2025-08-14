@@ -6,7 +6,7 @@ export interface DatabaseRecord {
   id: string;
   filename: string;
   book_title: string;
-  ai_description: string;
+  original_description: string;
   image_url?: string;
   vector_embedding?: number[];
   created_at: string;
@@ -41,11 +41,11 @@ export async function fetchDatabaseRecordsPaginated(
   // 构建查询
   let query = supabase
     .from('illustrations_optimized')
-    .select('id, filename, book_title, ai_description, image_url, created_at, updated_at', { count: 'exact' });
+    .select('id, filename, book_title, original_description, image_url, created_at, updated_at', { count: 'exact' });
   
   // 如果有搜索词，添加搜索条件
   if (searchTerm && searchTerm.trim()) {
-    query = query.or(`filename.ilike.%${searchTerm}%,book_title.ilike.%${searchTerm}%,ai_description.ilike.%${searchTerm}%`);
+    query = query.or(`filename.ilike.%${searchTerm}%,book_title.ilike.%${searchTerm}%,original_description.ilike.%${searchTerm}%`);
   }
   
   // 添加分页和排序

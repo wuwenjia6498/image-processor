@@ -1,0 +1,17 @@
+{
+  "timestamp": "2025-08-12T15:38:45.638Z",
+  "totalFiles": 63,
+  "results": {
+    "success": 61,
+    "notFound": 1,
+    "failed": 0,
+    "timeout": 1,
+    "errors": [
+      {
+        "filename": "1272-《隐形叶子》.jpg",
+        "error": "操作超时"
+      }
+    ]
+  },
+  "method": "filename_exact_match_with_timeout"
+}

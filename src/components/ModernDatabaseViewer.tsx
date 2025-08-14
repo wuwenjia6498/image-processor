@@ -309,13 +309,13 @@ const ModernDatabaseViewer: React.FC<ModernDatabaseViewerProps> = ({ isOpen, onC
                             <div className="space-y-2">
                               <div className="whitespace-pre-line prose prose-sm max-w-none">
                                 {expandedDescriptions.has(record.id) 
-                                  ? record.ai_description
-                                  : record.ai_description.length > 200 
-                                    ? `${record.ai_description.substring(0, 200)}...`
-                                    : record.ai_description
+                                                          ? record.original_description
+                        : record.original_description.length > 200
+                        ? `${record.original_description.substring(0, 200)}...`
+                        : record.original_description
                                 }
                               </div>
-                              {record.ai_description.length > 200 && (
+                              {record.original_description.length > 200 && (
                                 <button 
                                   onClick={() => toggleDescription(record.id)}
                                   className="text-blue-600 hover:text-blue-800 text-sm flex items-center space-x-1 transition-colors mt-2"

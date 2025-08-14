@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Upload, Image, Database, BarChart3, Search, Loader2, CheckCircle, AlertCircle, TrendingUp, Download, Eye, Brain, Target, ChevronDown, ChevronUp } from 'lucide-react';
+import { Upload, Image, Database, BarChart3, Search, Loader2, CheckCircle, AlertCircle, TrendingUp, Download, Eye, Brain, Target, ChevronDown, ChevronUp, Sliders, RotateCcw, Zap } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
@@ -8,6 +8,8 @@ import ModernDatabaseViewer from './ModernDatabaseViewer';
 import { ProcessedImage } from '../types';
 import { uploadImages, ProcessedImage as APIProcessedImage } from '../api/imageProcessor';
 import { matchIllustrationsToText, TextContent, IllustrationMatch } from '../api/illustration-api';
+import { performWeightedSearch, SearchWeights, WeightedSearchResult, WEIGHT_PRESETS } from '../api/weighted-search-api';
+import { vectorizeText } from '../api/vectorization-proxy';
 import { cn } from '../lib/utils';
 
 interface OptimizedWorkspaceProps {
@@ -26,6 +28,13 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
   const [matchResults, setMatchResults] = useState<IllustrationMatch[]>([]);
   const [isMatching, setIsMatching] = useState(false);
   const [matchError, setMatchError] = useState<string | null>(null);
+  
+  // 加权搜索相关状态
+  const [useWeightedSearch, setUseWeightedSearch] = useState(false);
+  const [weightedResults, setWeightedResults] = useState<WeightedSearchResult[]>([]);
+  const [searchWeights, setSearchWeights] = useState<SearchWeights>(WEIGHT_PRESETS.balanced);
+  const [showWeightSettings, setShowWeightSettings] = useState(false);
+  const [selectedPreset, setSelectedPreset] = useState<keyof typeof WEIGHT_PRESETS>('balanced');
   
   // 界面控制状态
   const [activeTab, setActiveTab] = useState<'upload' | 'match' | 'gallery'>('match');
@@ -229,24 +238,55 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
     setIsMatching(true);
     setMatchError(null);
     setMatchResults([]);
+    setWeightedResults([]);
 
     try {
-      const content: TextContent = {
-        content: textContent,
-        theme: '通用',
-        keywords: []
-      };
+      if (useWeightedSearch) {
+        // 使用加权搜索
+        console.log('🔍 执行加权语义搜索...');
+        const queryVector = await vectorizeText(textContent);
+        const results = await performWeightedSearch(queryVector, searchWeights, 10);
+        setWeightedResults(results);
+      } else {
+        // 使用传统搜索
+        const content: TextContent = {
+          content: textContent,
+          theme: '通用',
+          keywords: []
+        };
 
-      const results = await matchIllustrationsToText(content);
-      // 只取前5个匹配度最高的结果
-      setMatchResults(results.slice(0, 5));
+        const results = await matchIllustrationsToText(content);
+        // 只取前5个匹配度最高的结果
+        setMatchResults(results.slice(0, 5));
+      }
     } catch (error) {
       console.error('匹配文案时出错:', error);
       setMatchError('匹配失败: ' + (error as Error).message);
     } finally {
       setIsMatching(false);
     }
-  }, [textContent]);
+  }, [textContent, useWeightedSearch, searchWeights]);
+
+  // 权重更新处理
+  const handleWeightChange = useCallback((dimension: keyof SearchWeights, value: number) => {
+    setSearchWeights(prev => ({
+      ...prev,
+      [dimension]: value / 100 // 转换为0-1范围
+    }));
+    setSelectedPreset('balanced'); // 手动调整后重置为自定义
+  }, []);
+
+  // 预设模板选择
+  const handlePresetChange = useCallback((preset: keyof typeof WEIGHT_PRESETS) => {
+    setSelectedPreset(preset);
+    setSearchWeights(WEIGHT_PRESETS[preset]);
+  }, []);
+
+  // 重置权重为均衡
+  const resetWeights = useCallback(() => {
+    setSearchWeights(WEIGHT_PRESETS.balanced);
+    setSelectedPreset('balanced');
+  }, []);
 
   // 下载插图
   const handleDownloadImage = useCallback(async (imageUrl: string, filename: string) => {
@@ -266,182 +306,118 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
     }
   }, []);
 
-  // 获取匹配逻辑说明
+  // 获取匹配逻辑说明 - 个性化版本
   const getMatchingLogic = (match: IllustrationMatch, textContent: string) => {
     const similarity = (match.similarity * 100).toFixed(1);
     const logicPoints = [];
 
-    // 1. 相似度深度分析
-    if (match.similarity > 0.8) {
-      logicPoints.push({
-        icon: '🎯',
-        title: `高度匹配 (${similarity}%)`,
-        detail: `相似度评分超过80%，表明插图内容与您的文案在语义层面高度契合。这种匹配度通常意味着插图的主要元素、情感色彩或场景设定与文案描述的核心概念非常接近。`
-      });
-    } else if (match.similarity > 0.6) {
-      logicPoints.push({
-        icon: '✅',
-        title: `良好匹配 (${similarity}%)`,
-        detail: `相似度评分在60-80%区间，说明插图内容与文案具有较强的关联性。虽然不是完美匹配，但在主题、风格或情感表达上存在明显的共同点，能够有效支撑文案内容。`
-      });
-    } else if (match.similarity > 0.4) {
-      logicPoints.push({
-        icon: '⚠️',
-        title: `一般匹配 (${similarity}%)`,
-        detail: `相似度评分在40-60%区间，表明插图与文案存在一定的相关性。可能在某些特定角度（如情感基调、场景氛围或部分关键元素）与文案产生共鸣，但整体匹配度有待提升。`
-      });
-    } else {
-      logicPoints.push({
-        icon: '🔍',
-        title: `潜在匹配 (${similarity}%)`,
-        detail: `相似度评分较低，但系统仍识别出了一些潜在的关联点。这可能源于隐含的语义联系、抽象的概念关联，或是在特定语境下的间接相关性。建议结合具体需求评估使用价值。`
-      });
-    }
+    // 1. 核心匹配原因（根据相似度和内容特征个性化）
+    const getMatchReason = () => {
+      if (match.similarity > 0.8) {
+        return {
+          icon: '🎯',
+          title: `高度语义匹配 (${similarity}%)`,
+          detail: `插图内容与文案在核心概念上高度一致，是理想的视觉表达选择。`
+        };
+      } else if (match.similarity > 0.6) {
+        return {
+          icon: '✅',
+          title: `良好语义关联 (${similarity}%)`,
+          detail: `插图与文案在主题或情感表达上有明显共同点，能很好地支撑内容。`
+        };
+      } else if (match.similarity > 0.4) {
+        return {
+          icon: '🔍',
+          title: `中等语义关联 (${similarity}%)`,
+          detail: `插图与文案存在一定关联性，可能在某些特定角度产生共鸣。`
+        };
+      } else {
+        return {
+          icon: '💡',
+          title: `潜在创意关联 (${similarity}%)`,
+          detail: `通过深度语义分析发现的创意关联，可能带来意想不到的视觉效果。`
+        };
+      }
+    };
+    logicPoints.push(getMatchReason());
 
-    // 2. 关键词匹配深度分析
-    const textWords = textContent.toLowerCase().split(/\s+/).filter(word => word.length > 2);
-    const descWords = match.description.toLowerCase().split(/\s+/).filter(word => word.length > 2);
+    // 2. 关键词匹配分析（个性化描述）
+    const textWords = textContent.toLowerCase().split(/[\s，。！？、]+/).filter(word => word.length > 1);
+    const descWords = match.description.toLowerCase().split(/[\s，。！？、]+/).filter(word => word.length > 1);
     const commonWords = textWords.filter(word => 
       descWords.some(descWord => descWord.includes(word) || word.includes(descWord))
-    );
+    ).slice(0, 5);
     
     if (commonWords.length > 3) {
       logicPoints.push({
-        icon: '🔍',
+        icon: '🔤',
         title: `强关键词匹配`,
-        detail: `发现 ${commonWords.length} 个共同关键词：${commonWords.slice(0, 5).join('、')}${commonWords.length > 5 ? '等' : ''}。这些词汇的重合表明文案与插图在具体描述对象、场景要素或情感表达上存在直接的语言层面对应关系，增强了匹配的可信度。`
+        detail: `发现 ${commonWords.length} 个共同关键词：${commonWords.join('、')}，直接体现内容关联。`
       });
     } else if (commonWords.length > 0) {
       logicPoints.push({
         icon: '🔍',
         title: `关键词呼应`,
-        detail: `识别出 ${commonWords.length} 个共同关键词：${commonWords.join('、')}。虽然词汇重合度不高，但这些关键词的出现暗示了文案与插图在某些核心概念上的一致性，为匹配提供了基础的语言学支撑。`
+        detail: `共同关键词：${commonWords.join('、')}，为匹配提供语言层面支撑。`
       });
-    } else {
-      // 进行更深层的语义分析
-      const textLength = textContent.length;
-      const descLength = match.description.length;
-      if (textLength > 50 && descLength > 100) {
+    }
+
+    // 3. 内容特征分析（基于描述长度和复杂度）
+    const descLength = match.description.length;
+    if (descLength > 300) {
+      logicPoints.push({
+        icon: '📝',
+        title: `丰富内容描述`,
+        detail: `插图具有详细的场景描述（${descLength}字），提供了丰富的匹配维度。`
+      });
+    } else if (descLength > 150) {
+      logicPoints.push({
+        icon: '📄',
+        title: `完整内容描述`,
+        detail: `插图描述涵盖了主要视觉元素，为匹配提供充分信息。`
+      });
+    }
+
+    // 4. 情感色彩快速分析
+    const textLower = textContent.toLowerCase();
+    const descLower = match.description.toLowerCase();
+    const emotionKeywords = {
+      positive: ['温馨', '快乐', '美好', '幸福', '开心', '甜蜜', '温暖'],
+      peaceful: ['宁静', '平静', '安详', '静谧', '悠闲', '轻松'],
+      dynamic: ['活跃', '生动', '热闹', '充满活力', '激动', '兴奋']
+    };
+    
+    for (const [emotion, keywords] of Object.entries(emotionKeywords)) {
+      const matchCount = keywords.filter(word => textLower.includes(word) || descLower.includes(word)).length;
+      if (matchCount > 0) {
+        const emotionLabels = {
+          positive: { icon: '😊', label: '积极温馨', desc: '传达积极正面的情感氛围' },
+          peaceful: { icon: '🕊️', label: '宁静祥和', desc: '营造平静舒缓的感受' },
+          dynamic: { icon: '⚡', label: '活力动感', desc: '展现生动活跃的特质' }
+        };
+        const info = emotionLabels[emotion as keyof typeof emotionLabels];
         logicPoints.push({
-          icon: '🔍',
-          title: `深层语义关联`,
-          detail: `虽未发现直接的关键词匹配，但基于文本长度和内容丰富度分析，系统通过深度语义理解识别出潜在关联。这种匹配依赖于AI对语言深层含义的理解，可能涉及情感色彩、抽象概念或隐喻表达的相似性。`
+          icon: info.icon,
+          title: `${info.label}情感匹配`,
+          detail: `文案与插图都${info.desc}，情感基调一致。`
         });
+        break; // 只显示第一个匹配的情感类型
       }
     }
 
-    // 3. 主题来源深度分析
+    // 5. 来源信息（如果有）
     if (match.bookTitle) {
-      const bookThemeAnalysis = analyzeBookTheme(match.bookTitle, textContent);
       logicPoints.push({
         icon: '📚',
-        title: `主题来源分析`,
-        detail: `插图来源于《${match.bookTitle}》。${bookThemeAnalysis} 书籍作为插图的原始语境，为匹配提供了主题层面的背景支撑，有助于理解插图的深层含义和适用场景。`
-      });
-    }
-
-    // 4. 语义分析技术解释
-    const vectorAnalysis = analyzeVectorSimilarity(match.similarity, textContent, match.description);
-    logicPoints.push({
-      icon: '🧠',
-      title: `AI语义分析技术`,
-      detail: vectorAnalysis
-    });
-
-    // 5. 内容特征深度分析
-    if (match.description.length > 200) {
-      const contentAnalysis = analyzeContentRichness(match.description, textContent);
-      logicPoints.push({
-        icon: '📝',
-        title: `内容丰富度分析`,
-        detail: `插图描述长度为 ${match.description.length} 字，${contentAnalysis} 详细的描述为匹配算法提供了更多维度的分析素材，提高了匹配精度。`
-      });
-    }
-
-    // 6. 情感色彩分析
-    const emotionAnalysis = analyzeEmotionalTone(textContent, match.description);
-    if (emotionAnalysis) {
-      logicPoints.push({
-        icon: '💭',
-        title: `情感色彩匹配`,
-        detail: emotionAnalysis
+        title: `来源：${match.bookTitle}`,
+        detail: `原始出处提供了完整的主题背景和创作语境。`
       });
     }
 
     return logicPoints;
   };
 
-  // 分析书籍主题相关性
-  const analyzeBookTheme = (bookTitle: string, textContent: string) => {
-    const familyKeywords = ['家庭', '亲子', '父母', '孩子', '家人', '温馨', '陪伴'];
-    const adventureKeywords = ['探险', '旅行', '发现', '冒险', '探索', '奇幻'];
-    const educationKeywords = ['学习', '教育', '成长', '知识', '智慧', '启发'];
-    
-    const lowerText = textContent.toLowerCase();
-    const lowerTitle = bookTitle.toLowerCase();
-    
-    if (familyKeywords.some(keyword => lowerText.includes(keyword) || lowerTitle.includes(keyword))) {
-      return '该书籍主题偏向家庭温情，与文案中体现的人文关怀或情感表达形成呼应。';
-    } else if (adventureKeywords.some(keyword => lowerText.includes(keyword) || lowerTitle.includes(keyword))) {
-      return '该书籍具有探索冒险色彩，与文案中的动态描述或探索精神产生共鸣。';
-    } else if (educationKeywords.some(keyword => lowerText.includes(keyword) || lowerTitle.includes(keyword))) {
-      return '该书籍注重教育启发，与文案的知识传递或成长主题相契合。';
-    } else {
-      return '该书籍为插图提供了特定的文化背景和叙事语境，虽然主题关联度需要进一步评估，但原始出处的完整性有助于理解插图的创作意图。';
-    }
-  };
 
-  // 分析向量相似度技术细节
-  const analyzeVectorSimilarity = (similarity: number, textContent: string, description: string) => {
-    const textComplexity = textContent.split(' ').length;
-    const descComplexity = description.split(' ').length;
-    
-    if (similarity > 0.7) {
-      return `系统使用高维向量空间模型将文案和插图描述转换为数值向量，通过余弦相似度计算得出 ${(similarity * 100).toFixed(1)}% 的匹配度。这一高分表明两个文本在语义向量空间中距离较近，意味着它们在抽象语义层面具有相似的"语义指纹"。算法考虑了词汇语义、句法结构和语境信息的综合影响。`;
-    } else if (similarity > 0.4) {
-      return `通过深度学习模型将文本转换为 ${textComplexity > 20 ? '高维' : '标准'}语义向量，计算得出 ${(similarity * 100).toFixed(1)}% 的相似度。这个分数反映了文案与插图描述在语义空间中的相对位置关系。虽然不是完美匹配，但算法识别出了一定程度的语义关联，可能涉及同义词替换、概念层次关系或上下文语境的相似性。`;
-    } else {
-      return `基于transformer架构的语言模型对文本进行深度语义编码，生成的向量表示捕获了文本的深层语义特征。${(similarity * 100).toFixed(1)}% 的相似度虽然不高，但仍表明在高维语义空间中存在可测量的关联性。这种关联可能源于抽象概念的相似性、隐含语义的呼应，或是在特定语义维度上的局部匹配。`;
-    }
-  };
-
-  // 分析内容丰富度
-  const analyzeContentRichness = (description: string, textContent: string) => {
-    const sentences = description.split(/[。！？.!?]/).filter(s => s.trim().length > 0);
-    const avgSentenceLength = description.length / sentences.length;
-    
-    if (sentences.length > 5 && avgSentenceLength > 15) {
-      return '属于高质量详细描述，包含丰富的场景细节、人物特征和情感描述。';
-    } else if (sentences.length > 3) {
-      return '提供了较为完整的场景描述，涵盖了主要的视觉元素和基本情境。';
-    } else {
-      return '虽然描述相对简洁，但仍包含了关键的识别信息。';
-    }
-  };
-
-  // 分析情感色彩
-  const analyzeEmotionalTone = (textContent: string, description: string) => {
-    const positiveWords = ['快乐', '温馨', '美好', '幸福', '愉快', '开心', '欢乐', '甜蜜', '温暖', '舒适'];
-    const peacefulWords = ['宁静', '平静', '安详', '祥和', '静谧', '悠闲', '轻松', '舒缓'];
-    const dynamicWords = ['活跃', '生动', '热闹', '充满活力', '动感', '激动', '兴奋'];
-    
-    const textLower = textContent.toLowerCase();
-    const descLower = description.toLowerCase();
-    
-    const positiveCount = positiveWords.filter(word => textLower.includes(word) || descLower.includes(word)).length;
-    const peacefulCount = peacefulWords.filter(word => textLower.includes(word) || descLower.includes(word)).length;
-    const dynamicCount = dynamicWords.filter(word => textLower.includes(word) || descLower.includes(word)).length;
-    
-    if (positiveCount > 0) {
-      return `文案与插图描述都传达出积极正面的情感色彩，共同营造出温馨愉悦的氛围。这种情感基调的一致性增强了内容的协调性和感染力。`;
-    } else if (peacefulCount > 0) {
-      return `两者都体现出宁静祥和的情感特质，适合营造平静舒缓的阅读体验。这种情感共鸣有助于创造统一的感受基调。`;
-    } else if (dynamicCount > 0) {
-      return `文案与插图都展现出活跃生动的特征，能够传递积极向上的能量和动感体验。`;
-    } else {
-      return null; // 如果没有明显的情感色彩匹配，就不显示这一项
-    }
-  };
 
   // 获取当前任务状态信息
   const getCurrentTaskInfo = () => {
@@ -588,6 +564,241 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
                       onChange={(e) => setTextContent(e.target.value)}
                     />
                   </div>
+
+                  {/* 搜索模式切换 */}
+                  <div className="p-4 bg-slate-50 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="weighted-search"
+                            checked={useWeightedSearch}
+                            onChange={(e) => setUseWeightedSearch(e.target.checked)}
+                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                                                  <label htmlFor="weighted-search" className="text-sm font-medium text-slate-700">
+                          启用多维度加权搜索
+                        </label>
+                        </div>
+                        <div className="flex items-center space-x-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-md">
+                          <Zap className="h-3 w-3" />
+                          <span className="text-xs font-medium">7维度权重分析</span>
+                        </div>
+                      </div>
+                      {useWeightedSearch && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowWeightSettings(!showWeightSettings)}
+                          className="flex items-center space-x-2 ml-4"
+                        >
+                          <Sliders className="h-4 w-4" />
+                          <span>{showWeightSettings ? '隐藏设置' : '权重设置'}</span>
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 权重设置区域 */}
+                  {useWeightedSearch && showWeightSettings && (
+                    <Card className="border-blue-200 bg-blue-50">
+                      <CardHeader className="pb-4">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-lg flex items-center space-x-2">
+                            <Sliders className="h-5 w-5 text-blue-600" />
+                            <span>搜索权重设置</span>
+                          </CardTitle>
+                          <div className="flex items-center space-x-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={resetWeights}
+                              className="flex items-center space-x-2"
+                            >
+                              <RotateCcw className="h-4 w-4" />
+                              <span>重置</span>
+                            </Button>
+                          </div>
+                        </div>
+                        <CardDescription>
+                          调整不同主题维度的权重，影响搜索结果的排序偏好。权重越高的维度在搜索匹配时影响越大。
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        {/* 使用指南 */}
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                          <div className="flex items-start space-x-3">
+                            <div className="text-blue-500 mt-0.5">💡</div>
+                                                          <div className="text-blue-700">
+                              <div className="font-medium mb-2 text-base">使用建议：</div>
+                              <ul className="space-y-1.5 text-base">
+                                <li>• <strong>寻找教育内容</strong>：提高"阅读教育价值"和"学习策略"权重</li>
+                                <li>• <strong>寻找创意灵感</strong>：提高"创意玩法"和"场景视觉"权重</li>
+                                <li>• <strong>寻找情感故事</strong>：提高"人际角色"和"核心哲理"权重</li>
+                                <li>• <strong>寻找成长故事</strong>：提高"行动过程"和"核心哲理"权重</li>
+                              </ul>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 预设模板选择 */}
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700 mb-2">
+                            快速预设模板
+                          </label>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            {Object.entries(WEIGHT_PRESETS).map(([key, preset]) => {
+                              const presetInfo = {
+                                balanced: { 
+                                  label: '均衡搜索', 
+                                  desc: '所有维度平等权重，适合一般性搜索',
+                                  icon: '⚖️'
+                                },
+                                educational: { 
+                                  label: '教育导向', 
+                                  desc: '重点关注教育价值和学习策略',
+                                  icon: '🎓'
+                                },
+                                creative: { 
+                                  label: '创意导向', 
+                                  desc: '重点关注创意和游戏化元素',
+                                  icon: '🎨'
+                                },
+                                process_focused: { 
+                                  label: '流程导向', 
+                                  desc: '重点关注具体行动和成长过程',
+                                  icon: '🚀'
+                                },
+                                social: { 
+                                  label: '社交导向', 
+                                  desc: '重点关注人际关系和情感连接',
+                                  icon: '👥'
+                                },
+                                visual: { 
+                                  label: '视觉导向', 
+                                  desc: '重点关注视觉效果和场景氛围',
+                                  icon: '🌅'
+                                }
+                              };
+                              const info = presetInfo[key as keyof typeof presetInfo];
+                              return (
+                                <Button
+                                  key={key}
+                                  variant={selectedPreset === key ? "default" : "outline"}
+                                  size="sm"
+                                  onClick={() => handlePresetChange(key as keyof typeof WEIGHT_PRESETS)}
+                                  className="text-left h-auto p-2.5 flex flex-col items-start space-y-1"
+                                >
+                                  <div className="flex items-center space-x-2 w-full">
+                                    <span className="text-sm">{info.icon}</span>
+                                    <span className="text-base font-bold">{info.label}</span>
+                                  </div>
+                                  <div className={`text-xs leading-snug ${selectedPreset === key ? 'text-white/80' : 'text-slate-500'}`}>
+                                    {info.desc}
+                                  </div>
+                                </Button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* 权重滑块 */}
+                        <div className="space-y-3">
+                          <label className="block text-sm font-medium text-slate-700">
+                            主题维度权重 (总和自动归一化)
+                          </label>
+                          <div className="grid gap-3">
+                            {[
+                              { 
+                                key: 'philosophy', 
+                                label: '核心哲理与人生主题', 
+                                icon: '🧠',
+                                description: '分析画面传递的静态价值观、人生态度、世界观等。例如：对美的看法、生活的意义、幸福的定义。'
+                              },
+                              { 
+                                key: 'action_process', 
+                                label: '行动过程与成长', 
+                                icon: '🚀',
+                                description: '分析画面中角色的动态行为。描述他们正在做什么、经历什么挑战、如何克服，以及这个过程带来的成长。例如：探索、坚持、犯错、努力。'
+                              },
+                              { 
+                                key: 'interpersonal_roles', 
+                                label: '人际角色与情感连接', 
+                                icon: '👥',
+                                description: '分析画面中人物之间的关系和情感。是亲子、师生还是朋友？他们之间的互动是关爱、支持、引导还是陪伴？'
+                              },
+                              { 
+                                key: 'edu_value', 
+                                label: '阅读教育价值', 
+                                icon: '📚',
+                                description: '如果插图来自一本书，思考这本书能带给孩子的宏观教育意义。它如何塑造品格、拓宽视野、培养审美？'
+                              },
+                              { 
+                                key: 'learning_strategy', 
+                                label: '阅读学习策略', 
+                                icon: '💡',
+                                description: '分析画面中是否展现或暗示了具体的学习方法。例如：观察、提问、对比、输出、角色扮演等。'
+                              },
+                              { 
+                                key: 'creative_play', 
+                                label: '创意玩法与想象力', 
+                                icon: '🎨',
+                                description: '分析画面中的游戏、幻想、角色扮演等元素。它如何激发孩子的创造力和想象力？'
+                              },
+                              { 
+                                key: 'scene_visuals', 
+                                label: '场景氛围与视觉元素', 
+                                icon: '🌅',
+                                description: '描述画面的物理信息。包括场景（室内/外）、季节、天气、光线、色彩运用、艺术风格以及营造出的整体氛围（温馨、宁静、热闹、神秘等）。'
+                              }
+                            ].map(({ key, label, icon, description }) => {
+                              const value = Math.round((searchWeights[key as keyof SearchWeights] || 0) * 100);
+                              return (
+                                <div key={key} className="space-y-2.5 p-3 bg-white rounded-lg border border-slate-200">
+                                  <div className="flex items-center justify-between">
+                                    <label className="text-base font-bold text-slate-700 flex items-center space-x-2">
+                                      <span>{icon}</span>
+                                      <span>{label}</span>
+                                    </label>
+                                    <span className="text-sm font-medium text-blue-600 min-w-[3rem] text-right">
+                                      {value}%
+                                    </span>
+                                  </div>
+                                  
+                                  {/* 维度说明 */}
+                                  <div className="text-sm text-slate-500 leading-snug">
+                                    {description}
+                                  </div>
+                                  
+                                  <input
+                                    type="range"
+                                    min="0"
+                                    max="100"
+                                    value={value}
+                                    onChange={(e) => handleWeightChange(key as keyof SearchWeights, parseInt(e.target.value))}
+                                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                                    style={{
+                                      background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${value}%, #e5e7eb ${value}%, #e5e7eb 100%)`
+                                    }}
+                                  />
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* 权重总和显示 */}
+                        <div className="text-xs text-slate-500 text-center p-2 bg-white rounded border">
+                          权重总和: {Math.round(Object.values(searchWeights).reduce((sum, weight) => sum + (weight || 0), 0) * 100)}% 
+                          {Math.abs(Object.values(searchWeights).reduce((sum, weight) => sum + (weight || 0), 0) - 1) > 0.05 && 
+                            <span className="text-amber-600 ml-2">(将自动归一化)</span>
+                          }
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
                   <Button
                     onClick={handleTextMatch}
                     disabled={isMatching || !textContent.trim()}
@@ -596,12 +807,21 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
                     {isMatching ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        匹配中...
+                        {useWeightedSearch ? '多维度加权搜索中...' : '语义相似度搜索中...'}
                       </>
                     ) : (
                       <>
-                        <Search className="mr-2 h-4 w-4" />
-                        开始匹配
+                        {useWeightedSearch ? (
+                          <>
+                            <Zap className="mr-2 h-4 w-4" />
+                            开始多维度加权搜索
+                          </>
+                        ) : (
+                          <>
+                            <Search className="mr-2 h-4 w-4" />
+                            开始语义相似度搜索
+                          </>
+                        )}
                       </>
                     )}
                   </Button>
@@ -621,7 +841,7 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
               )}
 
               {/* 匹配结果 */}
-              {matchResults.length > 0 && (
+              {(matchResults.length > 0 || weightedResults.length > 0) && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center space-x-2">
@@ -629,12 +849,26 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
                       <span>匹配结果</span>
                     </CardTitle>
                     <CardDescription>
-                      找到 {matchResults.length} 个最佳匹配的插图 (按匹配度排序)
+                      {useWeightedSearch 
+                        ? `找到 ${weightedResults.length} 个加权搜索结果 (按综合得分排序)`
+                        : `找到 ${matchResults.length} 个最佳匹配的插图 (按匹配度排序)`
+                      }
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-6">
-                      {matchResults.map((match, index) => {
+                      {(useWeightedSearch ? weightedResults : matchResults).map((result, index) => {
+                        // 统一结果格式
+                        const match = useWeightedSearch 
+                          ? {
+                              id: result.id,  // 已经是 string 类型
+                              filename: result.title || `插图_${result.id}`,
+                              bookTitle: '', // 加权搜索结果中暂无书名
+                              description: result.original_description,
+                              imageUrl: result.image_url,
+                              similarity: result.final_score
+                            }
+                          : result as IllustrationMatch;
                         const matchId = `${match.filename}-${index}`;
                         const isDescExpanded = expandedDescriptions.has(matchId);
                         const isImageExpanded = expandedImages.has(matchId);
@@ -666,48 +900,90 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
                                         match.similarity > 0.6 ? "bg-blue-100 text-blue-800" :
                                         "bg-yellow-100 text-yellow-800"
                                       )}>
-                                        匹配度: {(match.similarity * 100).toFixed(1)}%
+                                        {useWeightedSearch ? '综合得分' : '匹配度'}: {(match.similarity * 100).toFixed(1)}%
                                       </span>
+                                      {useWeightedSearch && (
+                                        <span className="px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded-full">
+                                          <Zap className="inline h-3 w-3 mr-1" />
+                                          加权搜索
+                                        </span>
+                                      )}
                                     </div>
+
+                                    {/* 加权搜索详细得分 */}
+                                    {useWeightedSearch && result && (result as WeightedSearchResult).theme_philosophy && (
+                                      <div className="mt-3 p-3 bg-purple-50 rounded-lg">
+                                        <div className="text-sm font-medium text-purple-900 mb-2 flex items-center space-x-2">
+                                          <Brain className="h-4 w-4" />
+                                          <span>主题维度得分分析</span>
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                                          {[
+                                            { key: 'theme_philosophy', label: '哲理主题', icon: '🧠', weight: searchWeights.philosophy },
+                                            { key: 'action_process', label: '行动过程', icon: '🚀', weight: searchWeights.action_process },
+                                            { key: 'interpersonal_roles', label: '人际角色', icon: '👥', weight: searchWeights.interpersonal_roles },
+                                            { key: 'edu_value', label: '教育价值', icon: '📚', weight: searchWeights.edu_value },
+                                            { key: 'learning_strategy', label: '学习策略', icon: '💡', weight: searchWeights.learning_strategy },
+                                            { key: 'creative_play', label: '创意玩法', icon: '🎨', weight: searchWeights.creative_play },
+                                            { key: 'scene_visuals', label: '视觉场景', icon: '🌅', weight: searchWeights.scene_visuals }
+                                          ].map(({ key, label, icon, weight }) => {
+                                            const weightedResult = result as WeightedSearchResult;
+                                            const dimensionText = weightedResult[key as keyof WeightedSearchResult] as string || '';
+                                            const hasContent = dimensionText && dimensionText.trim().length > 0;
+                                            return (
+                                              <div key={key} className="flex items-center justify-between p-2 bg-white rounded border">
+                                                <div className="flex items-center space-x-2">
+                                                  <span>{icon}</span>
+                                                  <span className="text-purple-700">{label}</span>
+                                                  <span className="text-purple-500">({Math.round((weight || 0) * 100)}%)</span>
+                                                </div>
+                                                <div className="flex items-center space-x-1">
+                                                  {hasContent ? (
+                                                    <span className="text-green-600">✓</span>
+                                                  ) : (
+                                                    <span className="text-gray-400">-</span>
+                                                  )}
+                                                </div>
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
 
-                                {/* 匹配逻辑说明 */}
-                                <div className="bg-blue-50 rounded-lg p-4">
+                                {/* 匹配原因说明 - 简化版 */}
+                                <div className="bg-blue-50 rounded-lg p-3">
                                   <div 
                                     className="flex items-center justify-between cursor-pointer hover:bg-blue-100 rounded-lg p-2 -m-2 transition-colors"
                                     onClick={() => toggleMatchingLogic(matchId)}
                                   >
                                     <div className="flex items-center space-x-2">
                                       <Brain className="h-4 w-4 text-blue-600" />
-                                      <span className="font-medium text-blue-900">匹配逻辑分析</span>
+                                      <span className="font-medium text-blue-900">匹配原因</span>
                                       <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
-                                        {matchingLogic.length} 项分析
+                                        {matchingLogic.length} 项
                                       </span>
                                     </div>
-                                    <div className="flex items-center space-x-2">
-                                      <span className="text-xs text-blue-600">
-                                        {isMatchingLogicExpanded ? '点击收起' : '点击展开'}
-                                      </span>
-                                      {isMatchingLogicExpanded ? (
-                                        <ChevronUp className="h-4 w-4 text-blue-600" />
-                                      ) : (
-                                        <ChevronDown className="h-4 w-4 text-blue-600" />
-                                      )}
-                                    </div>
+                                    {isMatchingLogicExpanded ? (
+                                      <ChevronUp className="h-4 w-4 text-blue-600" />
+                                    ) : (
+                                      <ChevronDown className="h-4 w-4 text-blue-600" />
+                                    )}
                                   </div>
                                   
                                   {isMatchingLogicExpanded && (
-                                    <div className="space-y-3 mt-3">
+                                    <div className="space-y-2 mt-3">
                                       {matchingLogic.map((logic, logicIndex) => (
                                         <div key={logicIndex} className="bg-white rounded-lg p-3 border border-blue-100">
-                                          <div className="flex items-start space-x-3">
-                                            <span className="text-lg flex-shrink-0 mt-0.5">{logic.icon}</span>
+                                          <div className="flex items-start space-x-2">
+                                            <span className="text-base flex-shrink-0 mt-0.5">{logic.icon}</span>
                                             <div className="flex-1 min-w-0">
-                                              <div className="font-medium text-blue-900 mb-1">
+                                              <div className="font-medium text-blue-900 text-sm mb-1">
                                                 {logic.title}
                                               </div>
-                                              <div className="text-sm text-blue-700 leading-relaxed">
+                                              <div className="text-xs text-blue-700 leading-relaxed">
                                                 {logic.detail}
                                               </div>
                                             </div>

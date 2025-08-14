@@ -227,8 +227,8 @@ async function updateRecordDescription(record, index, total) {
     const { error: dbError } = await supabase
       .from('illustrations_optimized')
       .update({
-        ai_description: newDescription,
-        vector_embedding: newEmbedding,
+        original_description: newDescription,
+        original_embedding: newEmbedding,
         updated_at: new Date().toISOString()
       })
       .eq('id', record.id);

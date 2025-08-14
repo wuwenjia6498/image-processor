@@ -16,9 +16,9 @@ export interface SearchWeights {
   scene_visuals?: number;
 }
 
-// 搜索结果接口
+// 搜索结果接口（适配 illustrations_optimized 表结构）
 export interface WeightedSearchResult {
-  id: number;
+  id: string;  // 改为 string 类型，匹配实际表结构
   title: string;
   image_url: string;
   original_description: string;
@@ -102,7 +102,7 @@ export const WEIGHT_PRESETS = {
 } as const;
 
 /**
- * 执行加权语义搜索
+ * 执行加权语义搜索（带超时和降级处理）
  * @param queryEmbedding 查询向量 (1536维)
  * @param weights 权重配置对象
  * @param matchCount 返回结果数量
@@ -126,23 +126,98 @@ export async function performWeightedSearch(
     // 规范化权重（确保总和接近1）
     const normalizedWeights = normalizeWeights(weights);
     
-    // 调用数据库函数
-    const { data, error } = await supabase.rpc('weighted_semantic_search', {
-      query_embedding: `[${queryEmbedding.join(',')}]`,
-      weights: normalizedWeights,
-      match_count: matchCount
+    // 创建超时Promise
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => {
+        reject(new Error('搜索请求超时 (30秒)'));
+      }, 30000); // 30秒超时
     });
     
-    if (error) {
-      console.error('加权搜索错误:', error);
-      throw new Error(`搜索失败: ${error.message}`);
+    try {
+      console.log('🔍 尝试使用优化版加权搜索...');
+      
+      // 首先尝试优化版本的搜索函数
+      const optimizedSearchPromise = supabase.rpc('weighted_semantic_search_optimized', {
+        query_embedding: `[${queryEmbedding.join(',')}]`,
+        weights: normalizedWeights,
+        match_count: matchCount,
+        similarity_threshold: 0.1 // 相似度阈值
+      });
+      
+      const { data, error } = await Promise.race([optimizedSearchPromise, timeoutPromise]);
+      
+      if (error) {
+        throw error;
+      }
+      
+      console.log('✅ 优化版搜索成功，返回结果数量:', data?.length || 0);
+      return data || [];
+      
+    } catch (optimizedError) {
+      console.warn('⚠️ 优化版搜索失败，尝试降级到简化版本:', optimizedError);
+      
+      try {
+        // 降级到简化版本
+        const simpleSearchPromise = supabase.rpc('weighted_semantic_search_simple', {
+          query_embedding: `[${queryEmbedding.join(',')}]`,
+          weights: normalizedWeights,
+          match_count: matchCount
+        });
+        
+        const { data: simpleData, error: simpleError } = await Promise.race([
+          simpleSearchPromise, 
+          timeoutPromise
+        ]);
+        
+        if (simpleError) {
+          throw simpleError;
+        }
+        
+        console.log('✅ 简化版搜索成功，返回结果数量:', simpleData?.length || 0);
+        return simpleData || [];
+        
+      } catch (simpleError) {
+        console.warn('⚠️ 简化版搜索也失败，尝试使用原始搜索函数:', simpleError);
+        
+        // 最后降级到原始版本
+        const originalSearchPromise = supabase.rpc('weighted_semantic_search', {
+          query_embedding: `[${queryEmbedding.join(',')}]`,
+          weights: normalizedWeights,
+          match_count: matchCount
+        });
+        
+        const { data: originalData, error: originalError } = await Promise.race([
+          originalSearchPromise,
+          timeoutPromise
+        ]);
+        
+        if (originalError) {
+          throw originalError;
+        }
+        
+        console.log('✅ 原始搜索成功，返回结果数量:', originalData?.length || 0);
+        return originalData || [];
+      }
     }
     
-    return data || [];
-    
   } catch (error) {
-    console.error('加权语义搜索失败:', error);
-    throw error;
+    console.error('🚫 所有搜索方法都失败了:', error);
+    
+    // 提供更友好的错误信息
+    let errorMessage = '搜索失败';
+    if (error instanceof Error) {
+      if (error.message.includes('timeout') || error.message.includes('超时')) {
+        errorMessage = '搜索请求超时，请稍后重试或减少搜索结果数量';
+      } else if (error.message.includes('statement timeout')) {
+        errorMessage = '数据库查询超时，正在优化性能，请稍后重试';
+      } else if (error.message.includes('connection')) {
+        errorMessage = '网络连接问题，请检查网络后重试';
+      } else {
+        errorMessage = `搜索失败: ${error.message}`;
+      }
+    }
+    
+    throw new Error(errorMessage);
   }
 }
 
