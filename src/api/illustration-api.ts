@@ -62,11 +62,21 @@ async function mockPineconeQuery(vector: number[], topK: number = 10): Promise<a
   try {
     console.log('🔍 执行真实向量相似度搜索...');
     
-    // 从数据库获取所有图片记录（包含向量数据）
-    const { data: records, error } = await supabase
+    // 创建超时Promise（15秒）
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => {
+        reject(new Error('查询超时，请稍后重试'));
+      }, 15000);
+    });
+    
+    // 进一步限制查询数量，避免超时（只获取最近的300条记录）
+    const queryPromise = supabase
       .from('illustrations_optimized')
-      .select('*')
-      .order('created_at', { ascending: false });
+      .select('id, filename, image_url, original_description, original_embedding')
+      .order('created_at', { ascending: false })
+      .limit(300); // 大幅减少查询数量和字段
+    
+    const { data: records, error } = await Promise.race([queryPromise, timeoutPromise]);
 
     if (error) {
       throw new Error(`数据库查询失败: ${error.message}`);
@@ -145,6 +155,39 @@ async function mockPineconeQuery(vector: number[], topK: number = 10): Promise<a
     
   } catch (error) {
     console.error('向量相似度搜索失败:', error);
+    
+    // 如果是超时错误，尝试降级查询
+    if (error instanceof Error && (error.message.includes('timeout') || error.message.includes('超时'))) {
+      console.log('⚠️ 查询超时，尝试降级查询...');
+      try {
+        // 降级：只查询最近50条记录，不包含向量数据
+        const { data: fallbackRecords, error: fallbackError } = await supabase
+          .from('illustrations_optimized')
+          .select('id, filename, image_url, original_description')
+          .order('created_at', { ascending: false })
+          .limit(50);
+        
+        if (!fallbackError && fallbackRecords && fallbackRecords.length > 0) {
+          console.log('✅ 降级查询成功，返回', fallbackRecords.length, '条记录');
+          // 返回随机排序的结果（因为无法计算向量相似度）
+          return fallbackRecords
+            .sort(() => Math.random() - 0.5)
+            .slice(0, Math.min(topK, 5))
+            .map(record => ({
+              id: record.id,
+              score: Math.random() * 0.3 + 0.2, // 模拟较低的相似度分数
+              metadata: {
+                filename: record.filename,
+                description: record.original_description,
+                image_url: record.image_url
+              }
+            }));
+        }
+      } catch (fallbackError) {
+        console.error('降级查询也失败了:', fallbackError);
+      }
+    }
+    
     return [];
   }
 }

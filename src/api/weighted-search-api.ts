@@ -4,6 +4,13 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { 
+  recordSearchUsage, 
+  assessResultQuality, 
+  recommendOptimalWeights, 
+  getSearchLevelInfo,
+  SearchLevel 
+} from './search-quality-monitor';
 
 // 权重配置接口
 export interface SearchWeights {
@@ -106,13 +113,19 @@ export const WEIGHT_PRESETS = {
  * @param queryEmbedding 查询向量 (1536维)
  * @param weights 权重配置对象
  * @param matchCount 返回结果数量
+ * @param usePremiumFirst 是否优先使用精选集（300张高质量图片）
  * @returns 搜索结果数组
  */
 export async function performWeightedSearch(
   queryEmbedding: number[],
   weights: SearchWeights = WEIGHT_PRESETS.balanced,
-  matchCount: number = 20
+  matchCount: number = 20,
+  queryText?: string, // 新增查询文本参数，用于质量监控
+  usePremiumFirst: boolean = true // 默认优先使用精选集
 ): Promise<WeightedSearchResult[]> {
+  const startTime = Date.now();
+  let usedLevel: SearchLevel = 'failed';
+  
   try {
     // 验证输入参数
     if (!queryEmbedding || queryEmbedding.length !== 1536) {
@@ -126,6 +139,12 @@ export async function performWeightedSearch(
     // 规范化权重（确保总和接近1）
     const normalizedWeights = normalizeWeights(weights);
     
+    // 如果有查询文本，提供智能权重推荐
+    if (queryText) {
+      const recommendation = recommendOptimalWeights(queryText);
+      console.log(`💡 智能权重推荐: ${recommendation.preset} - ${recommendation.reason}`);
+    }
+    
     // 创建超时Promise
     const timeoutPromise = new Promise<never>((_, reject) => {
       setTimeout(() => {
@@ -133,15 +152,70 @@ export async function performWeightedSearch(
       }, 30000); // 30秒超时
     });
     
+    // 优先尝试精选集搜索（如果启用）
+    if (usePremiumFirst) {
+      try {
+        console.log('🌟 尝试使用精选集搜索（300张高质量图片）...');
+        
+        const premiumSearchPromise = supabase.rpc('weighted_semantic_search_premium', {
+          query_embedding: queryEmbedding,
+          weights: normalizedWeights,
+          match_count: matchCount,
+          similarity_threshold: 0.02 // 精选集使用更低阈值
+        });
+        
+        const { data: premiumData, error: premiumError } = await Promise.race([
+          premiumSearchPromise, 
+          timeoutPromise
+        ]);
+        
+        if (!premiumError && premiumData && premiumData.length > 0) {
+          console.log('✅ 精选集搜索成功，返回结果数量:', premiumData.length);
+          console.log('🔍 精选集第一个结果检查:', {
+            id: premiumData[0]?.id,
+            title: premiumData[0]?.title,
+            has_image_url: !!premiumData[0]?.image_url,
+            has_description: !!premiumData[0]?.original_description,
+            image_url_preview: premiumData[0]?.image_url?.substring(0, 50) + '...',
+            description_preview: premiumData[0]?.original_description?.substring(0, 50) + '...'
+          });
+          
+          usedLevel = 'premium' as SearchLevel;
+          
+          // 评估结果质量
+          if (queryText && premiumData) {
+            const quality = assessResultQuality(premiumData, queryText);
+            console.log(`📊 搜索质量评估 (精选集): ${quality.qualityGrade} 级 (平均得分: ${quality.avgScore})`);
+          }
+          
+          return premiumData || [];
+        } else {
+          console.log('⚠️ 精选集搜索无结果或失败，降级到全量搜索');
+          if (premiumError) {
+            console.log('精选集搜索错误:', premiumError);
+          }
+        }
+      } catch (premiumError) {
+        console.log('⚠️ 精选集搜索失败，降级到全量搜索:', premiumError);
+      }
+    }
+    
     try {
       console.log('🔍 尝试使用优化版加权搜索...');
       
       // 首先尝试优化版本的搜索函数
-      const optimizedSearchPromise = supabase.rpc('weighted_semantic_search_optimized', {
-        query_embedding: `[${queryEmbedding.join(',')}]`,
+      console.log('🔧 调用优化版函数，参数:', {
         weights: normalizedWeights,
         match_count: matchCount,
-        similarity_threshold: 0.1 // 相似度阈值
+        similarity_threshold: 0.05,  // 降低阈值，减少过度过滤
+        vector_length: queryEmbedding.length
+      });
+      
+      const optimizedSearchPromise = supabase.rpc('weighted_semantic_search_optimized', {
+        query_embedding: queryEmbedding, // 直接传递数组，让Supabase自动转换为vector类型
+        weights: normalizedWeights,
+        match_count: matchCount,
+        similarity_threshold: 0.05 // 降低相似度阈值，提高成功率
       });
       
       const { data, error } = await Promise.race([optimizedSearchPromise, timeoutPromise]);
@@ -151,6 +225,14 @@ export async function performWeightedSearch(
       }
       
       console.log('✅ 优化版搜索成功，返回结果数量:', data?.length || 0);
+      usedLevel = 'optimized';
+      
+      // 评估结果质量
+      if (queryText && data) {
+        const quality = assessResultQuality(data, queryText);
+        console.log(`📊 搜索质量评估: ${quality.qualityGrade} 级 (平均得分: ${quality.avgScore})`);
+      }
+      
       return data || [];
       
     } catch (optimizedError) {
@@ -159,7 +241,7 @@ export async function performWeightedSearch(
       try {
         // 降级到简化版本
         const simpleSearchPromise = supabase.rpc('weighted_semantic_search_simple', {
-          query_embedding: `[${queryEmbedding.join(',')}]`,
+          query_embedding: queryEmbedding, // 直接传递数组
           weights: normalizedWeights,
           match_count: matchCount
         });
@@ -174,6 +256,14 @@ export async function performWeightedSearch(
         }
         
         console.log('✅ 简化版搜索成功，返回结果数量:', simpleData?.length || 0);
+        usedLevel = 'simple';
+        
+        // 评估结果质量
+        if (queryText && simpleData) {
+          const quality = assessResultQuality(simpleData, queryText);
+          console.log(`📊 搜索质量评估 (简化版): ${quality.qualityGrade} 级 (平均得分: ${quality.avgScore})`);
+        }
+        
         return simpleData || [];
         
       } catch (simpleError) {
@@ -181,7 +271,7 @@ export async function performWeightedSearch(
         
         // 最后降级到原始版本
         const originalSearchPromise = supabase.rpc('weighted_semantic_search', {
-          query_embedding: `[${queryEmbedding.join(',')}]`,
+          query_embedding: queryEmbedding, // 直接传递数组
           weights: normalizedWeights,
           match_count: matchCount
         });
@@ -196,6 +286,14 @@ export async function performWeightedSearch(
         }
         
         console.log('✅ 原始搜索成功，返回结果数量:', originalData?.length || 0);
+        usedLevel = 'original';
+        
+        // 评估结果质量
+        if (queryText && originalData) {
+          const quality = assessResultQuality(originalData, queryText);
+          console.log(`📊 搜索质量评估 (原始版): ${quality.qualityGrade} 级 (平均得分: ${quality.avgScore})`);
+        }
+        
         return originalData || [];
       }
     }
@@ -218,7 +316,43 @@ export async function performWeightedSearch(
     }
     
     throw new Error(errorMessage);
+  } finally {
+    // 记录搜索使用统计
+    const responseTime = Date.now() - startTime;
+    const success = usedLevel !== 'failed';
+    recordSearchUsage(usedLevel, responseTime, success);
   }
+}
+
+/**
+ * 精选集专用搜索 - 直接使用300张高质量图片
+ * @param queryEmbedding 查询向量
+ * @param weights 权重配置对象
+ * @param matchCount 返回结果数量
+ * @returns 精选集搜索结果
+ */
+export async function searchPremiumCollection(
+  queryEmbedding: number[],
+  weights: SearchWeights = WEIGHT_PRESETS.balanced,
+  matchCount: number = 20
+): Promise<WeightedSearchResult[]> {
+  console.log('🌟 使用精选集专用搜索...');
+  
+  const normalizedWeights = normalizeWeights(weights);
+  
+  const { data, error } = await supabase.rpc('weighted_semantic_search_premium', {
+    query_embedding: queryEmbedding,
+    weights: normalizedWeights,
+    match_count: matchCount,
+    similarity_threshold: 0.02
+  });
+  
+  if (error) {
+    throw new Error(`精选集搜索失败: ${error.message}`);
+  }
+  
+  console.log('✅ 精选集搜索完成，结果数量:', data?.length || 0);
+  return data || [];
 }
 
 /**
@@ -293,7 +427,7 @@ export async function batchWeightedSearch(
     const results = await Promise.all(searchPromises);
     
     // 合并结果并去重
-    const mergedResults = new Map<number, WeightedSearchResult>();
+    const mergedResults = new Map<string, WeightedSearchResult>();
     
     results.forEach(resultSet => {
       resultSet.forEach(item => {

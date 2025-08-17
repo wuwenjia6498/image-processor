@@ -245,10 +245,12 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
         // 使用加权搜索
         console.log('🔍 执行加权语义搜索...');
         const queryVector = await vectorizeText(textContent);
-        const results = await performWeightedSearch(queryVector, searchWeights, 10);
+        const results = await performWeightedSearch(queryVector, searchWeights, 10, textContent, true); // 明确启用精选集搜索
+        console.log('✅ 加权搜索完成，返回', results?.length || 0, '个结果');
         setWeightedResults(results);
       } else {
         // 使用传统搜索
+        console.log('🔍 执行传统语义搜索...');
         const content: TextContent = {
           content: textContent,
           theme: '通用',
@@ -256,6 +258,7 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
         };
 
         const results = await matchIllustrationsToText(content);
+        console.log('✅ 传统搜索完成，返回', results?.length || 0, '个结果');
         // 只取前5个匹配度最高的结果
         setMatchResults(results.slice(0, 5));
       }
@@ -864,11 +867,18 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
                               id: result.id,  // 已经是 string 类型
                               filename: result.title || `插图_${result.id}`,
                               bookTitle: '', // 加权搜索结果中暂无书名
-                              description: result.original_description,
-                              imageUrl: result.image_url,
-                              similarity: result.final_score
+                              // 修复：API返回的数据字段位置颠倒了
+                              description: result.image_url || '暂无描述',  // 实际包含描述文字
+                              imageUrl: result.original_description || '',  // 实际包含图片URL
+                              similarity: result.final_score || 0,
+                              metadata: {
+                                bookTheme: result.theme_philosophy || '',
+                                keywords: []
+                              }
                             }
                           : result as IllustrationMatch;
+                        
+
                         const matchId = `${match.filename}-${index}`;
                         const isDescExpanded = expandedDescriptions.has(matchId);
                         const isImageExpanded = expandedImages.has(matchId);
@@ -1008,20 +1018,63 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
                                     </Button>
                                   </div>
                                   <div className="bg-slate-50 rounded-lg p-4">
-                                    <p className="text-sm text-slate-700 leading-relaxed">
-                                      {isDescExpanded 
-                                        ? match.description 
-                                        : `${match.description.substring(0, 150)}${match.description.length > 150 ? '...' : ''}`
-                                      }
-                                    </p>
+                                                                         <div className="text-sm text-slate-700 leading-relaxed space-y-2">
+                                       {(() => {
+                                         const fullText = match.description;
+                                         const shouldTruncate = !isDescExpanded && fullText.length > 300;
+                                         const displayText = shouldTruncate ? fullText.substring(0, 300) + '...' : fullText;
+                                         
+                                         // 按自然段落分割文本（保持与数据库original_description一致的格式）
+                                         const paragraphs = displayText
+                                           .split(/\n\s*\n/)  // 按双换行分段
+                                           .filter(p => p.trim().length > 0)
+                                           .map(p => p.trim().replace(/\n/g, ' '));  // 段内换行转为空格
+                                         
+                                         // 如果没有段落分割，尝试按句号分段（每段不超过200字符）
+                                         if (paragraphs.length === 1 && paragraphs[0].length > 200) {
+                                           const sentences = paragraphs[0].split(/[。！？]/);
+                                           const newParagraphs = [];
+                                           let currentParagraph = '';
+                                           
+                                           sentences.forEach((sentence, idx) => {
+                                             if (sentence.trim()) {
+                                               const punct = idx < sentences.length - 1 && sentences[idx + 1] ? 
+                                                 (paragraphs[0].charAt(paragraphs[0].indexOf(sentence) + sentence.length)) : '';
+                                               currentParagraph += sentence.trim() + (punct.match(/[。！？]/) ? punct : '');
+                                               
+                                               // 每段控制在200字符左右
+                                               if (currentParagraph.length > 200 || idx === sentences.length - 1) {
+                                                 if (currentParagraph.trim()) {
+                                                   newParagraphs.push(currentParagraph.trim());
+                                                   currentParagraph = '';
+                                                 }
+                                               }
+                                             }
+                                           });
+                                           
+                                           return newParagraphs.map((paragraph, index) => (
+                                             <p key={index} className="mb-2 last:mb-0">
+                                               {paragraph}
+                                             </p>
+                                           ));
+                                         }
+                                         
+                                         // 正常段落显示
+                                         return paragraphs.map((paragraph, index) => (
+                                           <p key={index} className="mb-2 last:mb-0">
+                                             {paragraph}
+                                           </p>
+                                         ));
+                                       })()}
+                                     </div>
                                   </div>
                                 </div>
 
                                 {/* 图片预览和操作 */}
-                                {match.imageUrl && (
-                                  <div className="space-y-3">
-                                    <div className="flex items-center justify-between">
-                                      <h5 className="font-medium text-slate-900">图片预览</h5>
+                                <div className="space-y-3">
+                                  <div className="flex items-center justify-between">
+                                    <h5 className="font-medium text-slate-900">图片预览</h5>
+                                    {match.imageUrl && (
                                       <div className="flex items-center space-x-2">
                                         <Button
                                           variant="outline"
@@ -1042,10 +1095,12 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
                                           <span>下载</span>
                                         </Button>
                                       </div>
-                                    </div>
-                                    
-                                    {/* 小图预览 */}
-                                    <div className="flex justify-center">
+                                    )}
+                                  </div>
+                                  
+                                  {/* 图片显示区域 */}
+                                  <div className="flex justify-center">
+                                    {match.imageUrl ? (
                                       <img
                                         src={match.imageUrl}
                                         alt={match.filename}
@@ -1054,10 +1109,33 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
                                           isImageExpanded ? "max-w-full max-h-96" : "max-w-xs max-h-48"
                                         )}
                                         onClick={() => toggleImageExpanded(matchId)}
+                                        onError={(e) => {
+                                          const target = e.target as HTMLImageElement;
+                                          target.style.display = 'none';
+                                          // 显示错误占位符
+                                          const parent = target.parentElement;
+                                          if (parent && !parent.querySelector('.image-error-placeholder')) {
+                                            const placeholder = document.createElement('div');
+                                            placeholder.className = 'image-error-placeholder flex items-center justify-center bg-gray-100 rounded-lg p-8 text-gray-500 border-2 border-dashed border-gray-300 max-w-xs max-h-48';
+                                            placeholder.innerHTML = '<div class="text-center"><div class="text-2xl mb-2">🖼️</div><div class="font-medium">图片加载失败</div><div class="text-xs mt-1 text-gray-400">请稍后重试</div></div>';
+                                            parent.appendChild(placeholder);
+                                          }
+                                        }}
+                                        onLoad={() => {
+                                          // 图片加载成功
+                                        }}
                                       />
-                                    </div>
+                                    ) : (
+                                      <div className="flex items-center justify-center bg-gray-100 rounded-lg p-8 text-gray-500 border-2 border-dashed border-gray-300 max-w-xs max-h-48">
+                                        <div className="text-center">
+                                          <div className="text-2xl mb-2">🖼️</div>
+                                          <div className="font-medium">暂无图片</div>
+                                          <div className="text-xs mt-1 text-gray-400">该记录未包含图片链接</div>
+                                        </div>
+                                      </div>
+                                    )}
                                   </div>
-                                )}
+                                </div>
                               </div>
                             </CardContent>
                           </Card>
