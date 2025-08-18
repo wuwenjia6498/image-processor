@@ -189,13 +189,13 @@ python process_illustrations_data_stable.py
 - 批量更新到 Supabase 和 Pinecone
 
 **7 个主题维度**：
-1. `theme_philosophy` - 主题哲学：核心哲理与人生主题
+1. `theme_philosophy` - 主题哲学：核心理念与人生主题
 2. `action_process` - 行动过程：行动过程与成长
 3. `interpersonal_roles` - 人际角色：人际角色与情感连接
-4. `edu_value` - 教育价值：阅读教育价值
-5. `learning_strategy` - 学习策略：阅读学习策略
-6. `creative_play` - 创意游戏：创意玩法与想象力
-7. `scene_visuals` - 场景视觉：场景氛围与视觉元素
+4. `edu_value` - 教育价值：阅读带来的价值
+5. `learning_strategy` - 学习策略：阅读中的学习方法
+6. `creative_play` - 创意游戏：创意表现与想象力
+7. `scene_visuals` - 场景视觉：场景氛围与画面元素
 
 > **💡 提示**：两阶段设计的优势在于分工明确 - Node.js 擅长文件处理和 API 调用，Python 擅长文本分析和机器学习处理。
 

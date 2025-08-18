@@ -715,7 +715,7 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
                             {[
                               { 
                                 key: 'philosophy', 
-                                label: '核心哲理与人生主题', 
+                                label: '核心理念与人生主题', 
                                 icon: '🧠',
                                 description: '分析画面传递的静态价值观、人生态度、世界观等。例如：对美的看法、生活的意义、幸福的定义。'
                               },
@@ -733,25 +733,25 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
                               },
                               { 
                                 key: 'edu_value', 
-                                label: '阅读教育价值', 
+                                label: '阅读带来的价值', 
                                 icon: '📚',
                                 description: '如果插图来自一本书，思考这本书能带给孩子的宏观教育意义。它如何塑造品格、拓宽视野、培养审美？'
                               },
                               { 
                                 key: 'learning_strategy', 
-                                label: '阅读学习策略', 
+                                label: '阅读中的学习方法', 
                                 icon: '💡',
                                 description: '分析画面中是否展现或暗示了具体的学习方法。例如：观察、提问、对比、输出、角色扮演等。'
                               },
                               { 
                                 key: 'creative_play', 
-                                label: '创意玩法与想象力', 
+                                label: '创意表现与想象力', 
                                 icon: '🎨',
                                 description: '分析画面中的游戏、幻想、角色扮演等元素。它如何激发孩子的创造力和想象力？'
                               },
                               { 
                                 key: 'scene_visuals', 
-                                label: '场景氛围与视觉元素', 
+                                label: '场景氛围与画面元素', 
                                 icon: '🌅',
                                 description: '描述画面的物理信息。包括场景（室内/外）、季节、天气、光线、色彩运用、艺术风格以及营造出的整体氛围（温馨、宁静、热闹、神秘等）。'
                               }
