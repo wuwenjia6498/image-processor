@@ -209,44 +209,42 @@ export function recommendOptimalWeights(queryText: string): {
 } {
   const text = queryText.toLowerCase();
   
-  // 教育相关关键词
-  const educationKeywords = ['学习', '教育', '知识', '技能', '成长', '发展', '培养', '启发', '思考'];
-  // 创意相关关键词
-  const creativeKeywords = ['创意', '想象', '创造', '艺术', '设计', '色彩', '美丽', '梦想', '幻想'];
-  // 社交相关关键词
-  const socialKeywords = ['朋友', '家人', '关系', '沟通', '合作', '分享', '帮助', '关爱', '陪伴'];
-  // 行动相关关键词
-  const actionKeywords = ['行动', '做', '实践', '体验', '尝试', '探索', '冒险', '挑战', '努力'];
-  // 视觉相关关键词
-  const visualKeywords = ['画面', '场景', '环境', '风景', '色彩', '光线', '氛围', '美景', '视觉'];
+  // 阅读教育相关关键词
+  const readingKeywords = ['阅读', '读书', '书籍', '学习', '教育', '知识', '思考', '理解', '启发', '智慧'];
+  // 哲理成长相关关键词
+  const philosophyKeywords = ['哲理', '人生', '成长', '感悟', '心态', '品格', '修养', '境界', '领悟', '觉醒'];
+  // 亲子家庭相关关键词
+  const familyKeywords = ['亲子', '家庭', '父母', '孩子', '陪伴', '温暖', '关爱', '依偎', '守护', '温馨'];
+  // 自然季节相关关键词
+  const natureKeywords = ['自然', '季节', '春夏秋冬', '风景', '花草', '树木', '天空', '阳光', '月亮', '星星'];
+  // 创意幻想相关关键词
+  const fantasyKeywords = ['想象', '创意', '幻想', '魔法', '奇幻', '梦境', '童话', '神奇', '超现实', '创造'];
 
-  const educationCount = educationKeywords.filter(keyword => text.includes(keyword)).length;
-  const creativeCount = creativeKeywords.filter(keyword => text.includes(keyword)).length;
-  const socialCount = socialKeywords.filter(keyword => text.includes(keyword)).length;
-  const actionCount = actionKeywords.filter(keyword => text.includes(keyword)).length;
-  const visualCount = visualKeywords.filter(keyword => text.includes(keyword)).length;
+  const readingCount = readingKeywords.filter(keyword => text.includes(keyword)).length;
+  const philosophyCount = philosophyKeywords.filter(keyword => text.includes(keyword)).length;
+  const familyCount = familyKeywords.filter(keyword => text.includes(keyword)).length;
+  const natureCount = natureKeywords.filter(keyword => text.includes(keyword)).length;
+  const fantasyCount = fantasyKeywords.filter(keyword => text.includes(keyword)).length;
 
   // 确定最佳预设
   const scores = {
-    educational: educationCount * 2,
-    creative: creativeCount * 2,
-    social: socialCount * 2,
-    process_focused: actionCount * 2,
-    visual: visualCount * 2,
-    balanced: 1 // 基础分
+    reading_wisdom: readingCount * 3 + philosophyCount, // 阅读+智慧双重加权
+    philosophy_growth: philosophyCount * 3 + readingCount, // 哲理+成长双重加权
+    family_warmth: familyCount * 3, // 家庭温暖专项加权
+    nature_seasons: natureCount * 3, // 自然季节专项加权
+    creative_fantasy: fantasyCount * 3, // 创意幻想专项加权
   };
 
   const bestPreset = Object.entries(scores).reduce((best, [preset, score]) => 
-    score > scores[best] ? preset : best, 'balanced'
+    score > scores[best] ? preset : best, 'reading_wisdom'
   ) as keyof typeof WEIGHT_PRESETS;
 
   const reasons = {
-    educational: '检测到教育学习相关内容，推荐教育导向权重配置',
-    creative: '检测到创意艺术相关内容，推荐创意导向权重配置',
-    social: '检测到社交情感相关内容，推荐社交导向权重配置',
-    process_focused: '检测到行动过程相关内容，推荐流程导向权重配置',
-    visual: '检测到视觉场景相关内容，推荐视觉导向权重配置',
-    balanced: '内容特征不明显，推荐均衡权重配置'
+    reading_wisdom: `检测到${readingCount}个阅读教育词汇，推荐阅读方法·智慧启迪模板`,
+    philosophy_growth: `检测到${philosophyCount}个哲理成长词汇，推荐哲理心语·成长感悟模板`,
+    family_warmth: `检测到${familyCount}个亲子家庭词汇，推荐亲子时光·温馨陪伴模板`,
+    nature_seasons: `检测到${natureCount}个自然季节词汇，推荐自然序曲·四季诗篇模板`,
+    creative_fantasy: `检测到${fantasyCount}个创意幻想词汇，推荐幻想乐园·创意无限模板`
   };
 
   return {

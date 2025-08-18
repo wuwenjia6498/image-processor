@@ -41,70 +41,70 @@ export interface WeightedSearchResult {
 
 // 预定义的权重配置模板
 export const WEIGHT_PRESETS = {
-  // 均衡搜索 - 所有维度平等权重
-  balanced: {
-    philosophy: 0.14,
-    action_process: 0.14,
-    interpersonal_roles: 0.14,
-    edu_value: 0.14,
-    learning_strategy: 0.14,
-    creative_play: 0.15,
-    scene_visuals: 0.15
+  // 📚 阅读方法 · 智慧启迪 - 分享读书干货、交流阅读感悟的阅读教育类文字
+  reading_wisdom: {
+    philosophy: 0.15,        // 核心哲理与人生主题: 15%
+    action_process: 0.05,    // 行动过程与成长: 5%
+    interpersonal_roles: 0.10, // 人际角色与情感连接: 10%
+    edu_value: 0.40,         // 阅读教育价值: 40% (核心)
+    learning_strategy: 0.30, // 阅读学习策略: 30% (核心)
+    creative_play: 0.00,     // 创意玩法与想象力: 0%
+    scene_visuals: 0.00      // 场景氛围与视觉元素: 0%
   },
   
-  // 教育导向 - 重点关注教育价值和学习策略
-  educational: {
-    philosophy: 0.2,
-    action_process: 0.1,
-    interpersonal_roles: 0.1,
-    edu_value: 0.4,
-    learning_strategy: 0.15,
-    creative_play: 0.03,
-    scene_visuals: 0.02
+  // 💡 哲理心语 · 成长感悟 - 富含人生哲理、关于个人成长和心态调整的句子
+  philosophy_growth: {
+    philosophy: 0.50,        // 核心哲理与人生主题: 50% (绝对核心)
+    action_process: 0.20,    // 行动过程与成长: 20%
+    interpersonal_roles: 0.10, // 人际角色与情感连接: 10%
+    edu_value: 0.00,         // 阅读教育价值: 0%
+    learning_strategy: 0.00, // 阅读学习策略: 0%
+    creative_play: 0.05,     // 创意玩法与想象力: 5%
+    scene_visuals: 0.15      // 场景氛围与视觉元素: 15%
   },
   
-  // 创意导向 - 重点关注创意和游戏化元素
-  creative: {
-    philosophy: 0.1,
-    action_process: 0.15,
-    interpersonal_roles: 0.1,
-    edu_value: 0.1,
-    learning_strategy: 0.1,
-    creative_play: 0.4,
-    scene_visuals: 0.05
+  // ❤️ 亲子时光 · 温馨陪伴 - 强调亲子关系、家庭温暖和情感安全感的文案
+  family_warmth: {
+    philosophy: 0.20,        // 核心哲理与人生主题: 20%
+    action_process: 0.05,    // 行动过程与成长: 5%
+    interpersonal_roles: 0.50, // 人际角色与情感连接: 50% (绝对核心)
+    edu_value: 0.00,         // 阅读教育价值: 0%
+    learning_strategy: 0.00, // 阅读学习策略: 0%
+    creative_play: 0.00,     // 创意玩法与想象力: 0%
+    scene_visuals: 0.25      // 场景氛围与视觉元素: 25%
   },
   
-  // 行为流程导向 - 重点关注具体行动和过程
-  process_focused: {
-    philosophy: 0.05,
-    action_process: 0.5,
-    interpersonal_roles: 0.1,
-    edu_value: 0.15,
-    learning_strategy: 0.15,
-    creative_play: 0.03,
-    scene_visuals: 0.02
+  // 🌿 自然序曲 · 四季诗篇 - 描写季节变化、自然风光和节日节气的文案
+  nature_seasons: {
+    philosophy: 0.15,        // 核心哲理与人生主题: 15%
+    action_process: 0.10,    // 行动过程与成长: 10%
+    interpersonal_roles: 0.05, // 人际角色与情感连接: 5%
+    edu_value: 0.00,         // 阅读教育价值: 0%
+    learning_strategy: 0.00, // 阅读学习策略: 0%
+    creative_play: 0.10,     // 创意玩法与想象力: 10%
+    scene_visuals: 0.60      // 场景氛围与视觉元素: 60% (绝对核心)
   },
   
-  // 社交互动导向 - 重点关注人际关系和角色
-  social: {
-    philosophy: 0.15,
-    action_process: 0.1,
-    interpersonal_roles: 0.4,
-    edu_value: 0.15,
-    learning_strategy: 0.1,
-    creative_play: 0.05,
-    scene_visuals: 0.05
+  // ✨ 幻想乐园 · 创意无限 - 鼓励想象力、创造力和趣味玩法的文案
+  creative_fantasy: {
+    philosophy: 0.00,        // 核心哲理与人生主题: 0%
+    action_process: 0.20,    // 行动过程与成长: 20%
+    interpersonal_roles: 0.05, // 人际角色与情感连接: 5%
+    edu_value: 0.00,         // 阅读教育价值: 0%
+    learning_strategy: 0.15, // 阅读学习策略: 15%
+    creative_play: 0.50,     // 创意玩法与想象力: 50% (绝对核心)
+    scene_visuals: 0.10      // 场景氛围与视觉元素: 10%
   },
-  
-  // 视觉设计导向 - 重点关注视觉效果和场景
-  visual: {
-    philosophy: 0.1,
-    action_process: 0.1,
-    interpersonal_roles: 0.1,
-    edu_value: 0.1,
-    learning_strategy: 0.1,
-    creative_play: 0.1,
-    scene_visuals: 0.4
+
+  // 🎛️ 自定义 - 用户完全自定义权重配置
+  custom: {
+    philosophy: 0.14,        // 核心哲理与人生主题: 14% (平均分配)
+    action_process: 0.14,    // 行动过程与成长: 14%
+    interpersonal_roles: 0.14, // 人际角色与情感连接: 14%
+    edu_value: 0.14,         // 阅读教育价值: 14%
+    learning_strategy: 0.14, // 阅读学习策略: 14%
+    creative_play: 0.15,     // 创意玩法与想象力: 15%
+    scene_visuals: 0.15      // 场景氛围与视觉元素: 15%
   }
 } as const;
 

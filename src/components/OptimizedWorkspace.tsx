@@ -32,9 +32,9 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
   // 加权搜索相关状态
   const [useWeightedSearch, setUseWeightedSearch] = useState(false);
   const [weightedResults, setWeightedResults] = useState<WeightedSearchResult[]>([]);
-  const [searchWeights, setSearchWeights] = useState<SearchWeights>(WEIGHT_PRESETS.balanced);
+  const [searchWeights, setSearchWeights] = useState<SearchWeights>(WEIGHT_PRESETS.reading_wisdom);
   const [showWeightSettings, setShowWeightSettings] = useState(false);
-  const [selectedPreset, setSelectedPreset] = useState<keyof typeof WEIGHT_PRESETS>('balanced');
+  const [selectedPreset, setSelectedPreset] = useState<keyof typeof WEIGHT_PRESETS>('reading_wisdom');
   
   // 界面控制状态
   const [activeTab, setActiveTab] = useState<'upload' | 'match' | 'gallery'>('match');
@@ -276,7 +276,7 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
       ...prev,
       [dimension]: value / 100 // 转换为0-1范围
     }));
-    setSelectedPreset('balanced'); // 手动调整后重置为自定义
+    setSelectedPreset('custom'); // 手动调整后切换到自定义模式
   }, []);
 
   // 预设模板选择
@@ -285,11 +285,14 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
     setSearchWeights(WEIGHT_PRESETS[preset]);
   }, []);
 
-  // 重置权重为均衡
+  // 重置权重（如果是自定义模式则重置为平衡分配，否则重置为当前选择的模板）
   const resetWeights = useCallback(() => {
-    setSearchWeights(WEIGHT_PRESETS.balanced);
-    setSelectedPreset('balanced');
-  }, []);
+    if (selectedPreset === 'custom') {
+      setSearchWeights(WEIGHT_PRESETS.custom);
+    } else {
+      setSearchWeights(WEIGHT_PRESETS[selectedPreset]);
+    }
+  }, [selectedPreset]);
 
   // 下载插图
   const handleDownloadImage = useCallback(async (imageUrl: string, filename: string) => {
@@ -570,118 +573,67 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
 
                   {/* 搜索模式切换 */}
                   <div className="p-4 bg-slate-50 rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
-                            id="weighted-search"
-                            checked={useWeightedSearch}
-                            onChange={(e) => setUseWeightedSearch(e.target.checked)}
-                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                          />
-                                                  <label htmlFor="weighted-search" className="text-sm font-medium text-slate-700">
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id="weighted-search"
+                          checked={useWeightedSearch}
+                          onChange={(e) => setUseWeightedSearch(e.target.checked)}
+                          className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                        <label htmlFor="weighted-search" className="text-sm font-medium text-slate-700">
                           启用多维度加权搜索
                         </label>
-                        </div>
-                        <div className="flex items-center space-x-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-md">
-                          <Zap className="h-3 w-3" />
-                          <span className="text-xs font-medium">7维度权重分析</span>
-                        </div>
                       </div>
-                      {useWeightedSearch && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setShowWeightSettings(!showWeightSettings)}
-                          className="flex items-center space-x-2 ml-4"
-                        >
-                          <Sliders className="h-4 w-4" />
-                          <span>{showWeightSettings ? '隐藏设置' : '权重设置'}</span>
-                        </Button>
-                      )}
+                      <div className="flex items-center space-x-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-md">
+                        <Zap className="h-3 w-3" />
+                        <span className="text-xs font-medium">7维度权重分析</span>
+                      </div>
                     </div>
                   </div>
 
-                  {/* 权重设置区域 */}
-                  {useWeightedSearch && showWeightSettings && (
-                    <Card className="border-blue-200 bg-blue-50">
-                      <CardHeader className="pb-4">
-                        <div className="flex items-center justify-between">
+                  {/* 多维度加权搜索设置区域 */}
+                  {useWeightedSearch && (
+                    <>
+                      {/* 快速预设模板选择 */}
+                      <Card className="border-blue-200 bg-blue-50">
+                        <CardHeader className="pb-3">
                           <CardTitle className="text-lg flex items-center space-x-2">
-                            <Sliders className="h-5 w-5 text-blue-600" />
-                            <span>搜索权重设置</span>
+                            <Zap className="h-5 w-5 text-blue-600" />
+                            <span>快速预设模板</span>
                           </CardTitle>
-                          <div className="flex items-center space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={resetWeights}
-                              className="flex items-center space-x-2"
-                            >
-                              <RotateCcw className="h-4 w-4" />
-                              <span>重置</span>
-                            </Button>
-                          </div>
-                        </div>
-                        <CardDescription>
-                          调整不同主题维度的权重，影响搜索结果的排序偏好。权重越高的维度在搜索匹配时影响越大。
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        {/* 使用指南 */}
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                          <div className="flex items-start space-x-3">
-                            <div className="text-blue-500 mt-0.5">💡</div>
-                                                          <div className="text-blue-700">
-                              <div className="font-medium mb-2 text-base">使用建议：</div>
-                              <ul className="space-y-1.5 text-base">
-                                <li>• <strong>寻找教育内容</strong>：提高"阅读教育价值"和"学习策略"权重</li>
-                                <li>• <strong>寻找创意灵感</strong>：提高"创意玩法"和"场景视觉"权重</li>
-                                <li>• <strong>寻找情感故事</strong>：提高"人际角色"和"核心哲理"权重</li>
-                                <li>• <strong>寻找成长故事</strong>：提高"行动过程"和"核心哲理"权重</li>
-                              </ul>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* 预设模板选择 */}
-                        <div>
-                          <label className="block text-sm font-medium text-slate-700 mb-2">
-                            快速预设模板
-                          </label>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          <CardDescription>
+                            选择适合您文案类型的预设模板，一键应用最佳权重配置
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid grid-cols-1 gap-3">
                             {Object.entries(WEIGHT_PRESETS).map(([key, preset]) => {
                               const presetInfo = {
-                                balanced: { 
-                                  label: '均衡搜索', 
-                                  desc: '所有维度平等权重，适合一般性搜索',
-                                  icon: '⚖️'
+                                reading_wisdom: { 
+                                  label: '📚 阅读方法与教育理念', 
+                                  desc: '关于如何阅读、亲子共读的技巧以及阅读对成长的重要性。'
                                 },
-                                educational: { 
-                                  label: '教育导向', 
-                                  desc: '重点关注教育价值和学习策略',
-                                  icon: '🎓'
+                                philosophy_growth: { 
+                                  label: '💡 人生哲理与情感感悟', 
+                                  desc: '充满哲思和温暖力量的句子，关于成长、心态和生活智慧。'
                                 },
-                                creative: { 
-                                  label: '创意导向', 
-                                  desc: '重点关注创意和游戏化元素',
-                                  icon: '🎨'
+                                family_warmth: { 
+                                  label: '❤️ 亲子关系与家庭教育', 
+                                  desc: '聚焦于父母与孩子之间的情感连接、安全感和言传身教。'
                                 },
-                                process_focused: { 
-                                  label: '流程导向', 
-                                  desc: '重点关注具体行动和成长过程',
-                                  icon: '🚀'
+                                nature_seasons: { 
+                                  label: '🌿 季节与自然氛围', 
+                                  desc: '如立夏、春分、秋日等节气，以及对自然景色的描绘。'
                                 },
-                                social: { 
-                                  label: '社交导向', 
-                                  desc: '重点关注人际关系和情感连接',
-                                  icon: '👥'
+                                creative_fantasy: { 
+                                  label: '✨ 想象力与创意启发', 
+                                  desc: '鼓励孩子发挥想象和创造力的内容。'
                                 },
-                                visual: { 
-                                  label: '视觉导向', 
-                                  desc: '重点关注视觉效果和场景氛围',
-                                  icon: '🌅'
+                                custom: { 
+                                  label: '🎛️ 自定义配置', 
+                                  desc: '从平衡的权重分配开始，完全自由地调整各维度权重。'
                                 }
                               };
                               const info = presetInfo[key as keyof typeof presetInfo];
@@ -691,26 +643,74 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
                                   variant={selectedPreset === key ? "default" : "outline"}
                                   size="sm"
                                   onClick={() => handlePresetChange(key as keyof typeof WEIGHT_PRESETS)}
-                                  className="text-left h-auto p-2.5 flex flex-col items-start space-y-1"
+                                  className="text-left h-auto p-3 flex flex-col items-start space-y-2"
                                 >
-                                  <div className="flex items-center space-x-2 w-full">
-                                    <span className="text-sm">{info.icon}</span>
-                                    <span className="text-base font-bold">{info.label}</span>
+                                  <div className="font-medium text-sm leading-tight">
+                                    {info.label}
                                   </div>
-                                  <div className={`text-xs leading-snug ${selectedPreset === key ? 'text-white/80' : 'text-slate-500'}`}>
+                                  <div className={`text-xs leading-relaxed ${selectedPreset === key ? 'text-white/80' : 'text-slate-500'}`}>
                                     {info.desc}
                                   </div>
                                 </Button>
                               );
                             })}
                           </div>
-                        </div>
+                        </CardContent>
+                      </Card>
 
-                        {/* 权重滑块 */}
-                        <div className="space-y-3">
-                          <label className="block text-sm font-medium text-slate-700">
-                            主题维度权重 (总和自动归一化)
-                          </label>
+                      {/* 高级自定义权重设置 */}
+                      <Card className="border-slate-200">
+                        <CardHeader className="pb-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <Sliders className="h-5 w-5 text-slate-600" />
+                              <CardTitle className="text-lg">高级自定义</CardTitle>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setShowWeightSettings(!showWeightSettings)}
+                              className="flex items-center space-x-2"
+                            >
+                              <span className="text-sm">{showWeightSettings ? '收起微调' : '微调权重'}</span>
+                              {showWeightSettings ? (
+                                <ChevronUp className="h-4 w-4" />
+                              ) : (
+                                <ChevronDown className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </div>
+                          <CardDescription>
+                            基于选择的模板进行精细调整，或完全自定义权重配置
+                          </CardDescription>
+                        </CardHeader>
+                        {showWeightSettings && (
+                          <CardContent className="pt-0">
+                            <div className="flex items-center justify-between mb-4">
+                              <span className="text-sm text-slate-600">当前模板：{
+                                selectedPreset === 'reading_wisdom' ? '📚 阅读方法与教育理念' :
+                                selectedPreset === 'philosophy_growth' ? '💡 人生哲理与情感感悟' :
+                                selectedPreset === 'family_warmth' ? '❤️ 亲子关系与家庭教育' :
+                                selectedPreset === 'nature_seasons' ? '🌿 季节与自然氛围' :
+                                selectedPreset === 'creative_fantasy' ? '✨ 想象力与创意启发' :
+                                selectedPreset === 'custom' ? '🎛️ 自定义配置' : '未知'
+                              }</span>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={resetWeights}
+                                className="flex items-center space-x-2"
+                              >
+                                <RotateCcw className="h-4 w-4" />
+                                <span>重置</span>
+                              </Button>
+                            </div>
+
+                            {/* 权重滑块 */}
+                            <div className="space-y-3">
+                              <label className="block text-sm font-medium text-slate-700">
+                                主题维度权重 (总和自动归一化)
+                              </label>
                           <div className="grid gap-3">
                             {[
                               { 
@@ -755,7 +755,14 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
                                 icon: '🌅',
                                 description: '描述画面的物理信息。包括场景（室内/外）、季节、天气、光线、色彩运用、艺术风格以及营造出的整体氛围（温馨、宁静、热闹、神秘等）。'
                               }
-                            ].map(({ key, label, icon, description }) => {
+                            ]
+                            .sort((a, b) => {
+                              // 按权重值从大到小排序
+                              const valueA = searchWeights[a.key as keyof SearchWeights] || 0;
+                              const valueB = searchWeights[b.key as keyof SearchWeights] || 0;
+                              return valueB - valueA;
+                            })
+                            .map(({ key, label, icon, description }) => {
                               const value = Math.round((searchWeights[key as keyof SearchWeights] || 0) * 100);
                               return (
                                 <div key={key} className="space-y-2.5 p-3 bg-white rounded-lg border border-slate-200">
@@ -791,15 +798,17 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
                           </div>
                         </div>
 
-                        {/* 权重总和显示 */}
-                        <div className="text-xs text-slate-500 text-center p-2 bg-white rounded border">
-                          权重总和: {Math.round(Object.values(searchWeights).reduce((sum, weight) => sum + (weight || 0), 0) * 100)}% 
-                          {Math.abs(Object.values(searchWeights).reduce((sum, weight) => sum + (weight || 0), 0) - 1) > 0.05 && 
-                            <span className="text-amber-600 ml-2">(将自动归一化)</span>
-                          }
-                        </div>
-                      </CardContent>
-                    </Card>
+                          {/* 权重总和显示 */}
+                          <div className="text-xs text-slate-500 text-center p-2 bg-white rounded border">
+                            权重总和: {Math.round(Object.values(searchWeights).reduce((sum, weight) => sum + (weight || 0), 0) * 100)}% 
+                            {Math.abs(Object.values(searchWeights).reduce((sum, weight) => sum + (weight || 0), 0) - 1) > 0.05 && 
+                              <span className="text-amber-600 ml-2">(将自动归一化)</span>
+                            }
+                          </div>
+                        </CardContent>
+                        )}
+                      </Card>
+                    </>
                   )}
 
                   <Button
@@ -920,89 +929,11 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
                                       )}
                                     </div>
 
-                                    {/* 加权搜索详细得分 */}
-                                    {useWeightedSearch && result && (result as WeightedSearchResult).theme_philosophy && (
-                                      <div className="mt-3 p-3 bg-purple-50 rounded-lg">
-                                        <div className="text-sm font-medium text-purple-900 mb-2 flex items-center space-x-2">
-                                          <Brain className="h-4 w-4" />
-                                          <span>主题维度得分分析</span>
-                                        </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
-                                          {[
-                                            { key: 'theme_philosophy', label: '哲理主题', icon: '🧠', weight: searchWeights.philosophy },
-                                            { key: 'action_process', label: '行动过程', icon: '🚀', weight: searchWeights.action_process },
-                                            { key: 'interpersonal_roles', label: '人际角色', icon: '👥', weight: searchWeights.interpersonal_roles },
-                                            { key: 'edu_value', label: '教育价值', icon: '📚', weight: searchWeights.edu_value },
-                                            { key: 'learning_strategy', label: '学习策略', icon: '💡', weight: searchWeights.learning_strategy },
-                                            { key: 'creative_play', label: '创意玩法', icon: '🎨', weight: searchWeights.creative_play },
-                                            { key: 'scene_visuals', label: '视觉场景', icon: '🌅', weight: searchWeights.scene_visuals }
-                                          ].map(({ key, label, icon, weight }) => {
-                                            const weightedResult = result as WeightedSearchResult;
-                                            const dimensionText = weightedResult[key as keyof WeightedSearchResult] as string || '';
-                                            const hasContent = dimensionText && dimensionText.trim().length > 0;
-                                            return (
-                                              <div key={key} className="flex items-center justify-between p-2 bg-white rounded border">
-                                                <div className="flex items-center space-x-2">
-                                                  <span>{icon}</span>
-                                                  <span className="text-purple-700">{label}</span>
-                                                  <span className="text-purple-500">({Math.round((weight || 0) * 100)}%)</span>
-                                                </div>
-                                                <div className="flex items-center space-x-1">
-                                                  {hasContent ? (
-                                                    <span className="text-green-600">✓</span>
-                                                  ) : (
-                                                    <span className="text-gray-400">-</span>
-                                                  )}
-                                                </div>
-                                              </div>
-                                            );
-                                          })}
-                                        </div>
-                                      </div>
-                                    )}
+
                                   </div>
                                 </div>
 
-                                {/* 匹配原因说明 - 简化版 */}
-                                <div className="bg-blue-50 rounded-lg p-3">
-                                  <div 
-                                    className="flex items-center justify-between cursor-pointer hover:bg-blue-100 rounded-lg p-2 -m-2 transition-colors"
-                                    onClick={() => toggleMatchingLogic(matchId)}
-                                  >
-                                    <div className="flex items-center space-x-2">
-                                      <Brain className="h-4 w-4 text-blue-600" />
-                                      <span className="font-medium text-blue-900">匹配原因</span>
-                                      <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
-                                        {matchingLogic.length} 项
-                                      </span>
-                                    </div>
-                                    {isMatchingLogicExpanded ? (
-                                      <ChevronUp className="h-4 w-4 text-blue-600" />
-                                    ) : (
-                                      <ChevronDown className="h-4 w-4 text-blue-600" />
-                                    )}
-                                  </div>
-                                  
-                                  {isMatchingLogicExpanded && (
-                                    <div className="space-y-2 mt-3">
-                                      {matchingLogic.map((logic, logicIndex) => (
-                                        <div key={logicIndex} className="bg-white rounded-lg p-3 border border-blue-100">
-                                          <div className="flex items-start space-x-2">
-                                            <span className="text-base flex-shrink-0 mt-0.5">{logic.icon}</span>
-                                            <div className="flex-1 min-w-0">
-                                              <div className="font-medium text-blue-900 text-sm mb-1">
-                                                {logic.title}
-                                              </div>
-                                              <div className="text-xs text-blue-700 leading-relaxed">
-                                                {logic.detail}
-                                              </div>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  )}
-                                </div>
+
 
                                 {/* AI描述 */}
                                 <div className="space-y-3">
