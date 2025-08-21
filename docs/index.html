@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文图匹配工作台 - 搜索使用指南</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            padding: 50px 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+        }
+        
+        .logo {
+            font-size: 3.5em;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            color: #333;
+            font-size: 2.2em;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+        
+        .subtitle {
+            color: #666;
+            font-size: 1.1em;
+            margin-bottom: 35px;
+            line-height: 1.6;
+        }
+        
+        .main-link {
+            display: block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            padding: 18px 35px;
+            border-radius: 15px;
+            transition: all 0.3s ease;
+            font-size: 1.2em;
+            font-weight: 600;
+            margin-bottom: 25px;
+        }
+        
+        .main-link:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.3);
+        }
+        
+        .main-link .icon {
+            font-size: 1.4em;
+            margin-right: 12px;
+        }
+        
+        .highlight {
+            background: #f8f9ff;
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+            margin-bottom: 25px;
+        }
+        
+        .highlight h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        
+        .highlight p {
+            color: #495057;
+            font-size: 0.95em;
+            line-height: 1.6;
+        }
+        
+        .footer {
+            color: #6c757d;
+            font-size: 0.85em;
+            line-height: 1.5;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 35px 25px;
+            }
+            
+            h1 {
+                font-size: 1.9em;
+            }
+            
+            .logo {
+                font-size: 3em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">🔍</div>
+        <h1>智能搜索使用指南</h1>
+        <p class="subtitle">掌握语义搜索和多维加权搜索的使用技巧</p>
+        
+        <a href="search-guide.html" class="main-link">
+            <span class="icon">📖</span>
+            查看搜索功能详解
+        </a>
+        
+        <div class="highlight">
+            <h3>🎯 重点内容</h3>
+            <p>• 语义搜索使用场景和技巧<br>
+            • 多维加权搜索详细操作<br>
+            • 权重微调实用方法</p>
+        </div>
+        
+        <div class="footer">
+            <p>专为文图匹配工作台用户设计</p>
+            <p>让您快速掌握智能搜索功能</p>
+        </div>
+    </div>
+    
+    <script>
+        // 页面加载动画
+        document.addEventListener('DOMContentLoaded', function() {
+            const container = document.querySelector('.container');
+            container.style.opacity = '0';
+            container.style.transform = 'translateY(30px)';
+            
+            setTimeout(() => {
+                container.style.transition = 'all 0.6s ease';
+                container.style.opacity = '1';
+                container.style.transform = 'translateY(0)';
+            }, 100);
+        });
+        
+        // 链接点击效果
+        document.querySelector('.main-link').addEventListener('click', function(e) {
+            this.style.transform = 'scale(0.98)';
+            setTimeout(() => {
+                this.style.transform = '';
+            }, 150);
+        });
+    </script>
+</body>
+</html> 

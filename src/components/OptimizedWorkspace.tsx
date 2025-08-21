@@ -490,6 +490,17 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
                 <p className="text-sm text-slate-600">插图上传及与文图智能匹配系统</p>
               </div>
             </div>
+            <div className="flex items-center space-x-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open('./search-guide.html', '_blank')}
+                className="flex items-center space-x-2 bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
+              >
+                <Brain className="h-4 w-4" />
+                <span>使用指南</span>
+              </Button>
+            </div>
           </div>
         </div>
       </header>
@@ -735,7 +746,7 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
                                 key: 'edu_value', 
                                 label: '阅读带来的价值', 
                                 icon: '📚',
-                                description: '如果插图来自一本书，思考这本书能带给孩子的宏观教育意义。它如何塑造品格、拓宽视野、培养审美？'
+                                description: '思考这本书能带给孩子的宏观教育意义。它如何塑造品格、拓宽视野、培养审美？'
                               },
                               { 
                                 key: 'learning_strategy', 
