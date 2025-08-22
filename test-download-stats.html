@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>测试下载统计</title>
+</head>
+<body>
+    <h1>下载统计测试</h1>
+    <p>请在Supabase控制台执行以下SQL：</p>
+    <pre>
+-- 查看当前下载记录数量
+SELECT COUNT(*) as total_downloads FROM material_library;
+
+-- 如果需要清理测试数据，执行：
+-- TRUNCATE TABLE material_library;
+    </pre>
+    
+    <p>清理完成后，下载记录应该显示为0。</p>
+</body>
+</html> 

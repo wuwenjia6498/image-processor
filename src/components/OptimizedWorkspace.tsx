@@ -1,15 +1,17 @@
 import React, { useState, useCallback } from 'react';
-import { Upload, Image, Database, BarChart3, Search, Loader2, CheckCircle, AlertCircle, TrendingUp, Download, Eye, Brain, Target, ChevronDown, ChevronUp, Sliders, RotateCcw, Zap } from 'lucide-react';
+import { Upload, Image, Database, BarChart3, Search, Loader2, CheckCircle, AlertCircle, TrendingUp, Download, Eye, Brain, Target, ChevronDown, ChevronUp, Sliders, RotateCcw, Zap, FolderOpen } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import ModernImageUploader from './ModernImageUploader';
 import ModernDatabaseViewer from './ModernDatabaseViewer';
+import DownloadLibraryViewer from './DownloadLibraryViewer';
 import { ProcessedImage } from '../types';
 import { uploadImages, ProcessedImage as APIProcessedImage } from '../api/imageProcessor';
 import { matchIllustrationsToText, TextContent, IllustrationMatch } from '../api/illustration-api';
 import { performWeightedSearch, SearchWeights, WeightedSearchResult, WEIGHT_PRESETS } from '../api/weighted-search-api';
 import { vectorizeText } from '../api/vectorization-proxy';
+import { recordImageDownload, checkMultipleImagesDownloaded } from '../api/download-library-api';
 import { cn } from '../lib/utils';
 
 interface OptimizedWorkspaceProps {
@@ -36,8 +38,12 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
   const [showWeightSettings, setShowWeightSettings] = useState(false);
   const [selectedPreset, setSelectedPreset] = useState<keyof typeof WEIGHT_PRESETS>('reading_wisdom');
   
+  // 已下载图片过滤状态
+  const [downloadedImages, setDownloadedImages] = useState<Set<string>>(new Set());
+  const [showDownloadedFilter, setShowDownloadedFilter] = useState(true);
+  
   // 界面控制状态
-  const [activeTab, setActiveTab] = useState<'upload' | 'match' | 'gallery'>('match');
+  const [activeTab, setActiveTab] = useState<'upload' | 'match' | 'gallery' | 'downloads'>('match');
   const [isDatabaseViewerOpen, setIsDatabaseViewerOpen] = useState(false);
   const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
   const [expandedImages, setExpandedImages] = useState<Set<string>>(new Set());
@@ -228,47 +234,87 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
     }
   }, []);
 
-  // 文案匹配处理
+  // 处理文案匹配
   const handleTextMatch = useCallback(async () => {
     if (!textContent.trim()) {
-      setMatchError('请输入要匹配的文案内容');
+      setMatchError('请输入文案内容');
       return;
     }
 
     setIsMatching(true);
     setMatchError(null);
-    setMatchResults([]);
-    setWeightedResults([]);
 
     try {
+      let results: IllustrationMatch[] = [];
+      let weightedResults: WeightedSearchResult[] = [];
+      
       if (useWeightedSearch) {
         // 使用加权搜索
-        console.log('🔍 执行加权语义搜索...');
-        const queryVector = await vectorizeText(textContent);
-        const results = await performWeightedSearch(queryVector, searchWeights, 10, textContent, true); // 明确启用精选集搜索
-        console.log('✅ 加权搜索完成，返回', results?.length || 0, '个结果');
-        setWeightedResults(results);
+        const embedding = await vectorizeText(textContent);
+        const targetCount = 5; // 目标显示数量
+        let allResults: WeightedSearchResult[] = [];
+        let batchSize = 10; // 每次获取的数量
+        let maxAttempts = 5; // 最大尝试次数，避免无限循环
+        let attempt = 0;
+        
+        while (allResults.length < targetCount && attempt < maxAttempts) {
+          attempt++;
+          const batchResults = await performWeightedSearch(embedding, searchWeights, batchSize * attempt, textContent);
+          
+          console.log(`🔍 第${attempt}次搜索，获取结果数量: ${batchResults.length}`);
+          
+          if (showDownloadedFilter && batchResults.length > 0) {
+            // 检查哪些图片已被下载
+            const filenames = batchResults.map(r => r.title);
+            const downloaded = await checkMultipleImagesDownloaded(filenames);
+            setDownloadedImages(downloaded);
+            
+            console.log(`🔍 检查到已下载的图片: ${Array.from(downloaded).join(', ')}`);
+            
+            // 过滤已下载的图片
+            const filteredResults = batchResults.filter(r => !downloaded.has(r.title));
+            console.log(`🔍 过滤前: ${batchResults.length}张, 已下载: ${downloaded.size}张, 过滤后: ${filteredResults.length}张`);
+            
+            allResults = filteredResults.slice(0, targetCount); // 只取前targetCount个结果
+          } else {
+            allResults = batchResults.slice(0, targetCount);
+          }
+          
+          // 如果没有更多结果可获取，就停止尝试
+          if (batchResults.length < batchSize * attempt) {
+            console.log(`🔍 已获取所有可用结果，停止搜索`);
+            break;
+          }
+        }
+        
+        console.log(`🔍 最终返回结果数量: ${allResults.length}`);
+        weightedResults = allResults;
+        setWeightedResults(weightedResults);
       } else {
-        // 使用传统搜索
-        console.log('🔍 执行传统语义搜索...');
-        const content: TextContent = {
-          content: textContent,
-          theme: '通用',
-          keywords: []
-        };
-
-        const results = await matchIllustrationsToText(content);
-        console.log('✅ 传统搜索完成，返回', results?.length || 0, '个结果');
-        // 只取前5个匹配度最高的结果
-        setMatchResults(results.slice(0, 5));
+        // 使用传统匹配
+        const textContentObj: TextContent = { content: textContent };
+        results = await matchIllustrationsToText(textContentObj);
+        
+        // 检查传统搜索结果中哪些图片已被下载
+        if (showDownloadedFilter && results.length > 0) {
+          const filenames = results.map(r => r.filename);
+          const downloaded = await checkMultipleImagesDownloaded(filenames);
+          setDownloadedImages(downloaded);
+          
+          // 过滤已下载的图片
+          results = results.filter(r => !downloaded.has(r.filename));
+        }
+        
+        setMatchResults(results);
       }
+      
     } catch (error) {
-      console.error('匹配文案时出错:', error);
-      setMatchError('匹配失败: ' + (error as Error).message);
+      console.error('文案匹配失败:', error);
+      setMatchError(error instanceof Error ? error.message : '匹配失败，请重试');
     } finally {
       setIsMatching(false);
     }
-  }, [textContent, useWeightedSearch, searchWeights]);
+  }, [textContent, useWeightedSearch, searchWeights, showDownloadedFilter]);
 
   // 权重更新处理
   const handleWeightChange = useCallback((dimension: keyof SearchWeights, value: number) => {
@@ -295,7 +341,7 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
   }, [selectedPreset]);
 
   // 下载插图
-  const handleDownloadImage = useCallback(async (imageUrl: string, filename: string) => {
+  const handleDownloadImage = useCallback(async (imageUrl: string, filename: string, bookTitle?: string, description?: string) => {
     try {
       const response = await fetch(imageUrl);
       const blob = await response.blob();
@@ -307,6 +353,9 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
+      
+      // 记录下载
+      await recordImageDownload(filename, imageUrl, bookTitle, description);
     } catch (error) {
       console.error('下载插图失败:', error);
     }
@@ -540,8 +589,8 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
         )}
 
         {/* 主要功能区域 */}
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'upload' | 'match' | 'gallery')}>
-          <TabsList className="grid w-full grid-cols-3 mb-6">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'upload' | 'match' | 'gallery' | 'downloads')}>
+          <TabsList className="grid w-full grid-cols-4 mb-6">
             <TabsTrigger value="match" className="flex items-center space-x-2">
               <Search className="h-4 w-4" />
               <span>文图匹配</span>
@@ -553,6 +602,10 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
             <TabsTrigger value="gallery" className="flex items-center space-x-2">
               <Image className="h-4 w-4" />
               <span>插图库</span>
+            </TabsTrigger>
+            <TabsTrigger value="downloads" className="flex items-center space-x-2">
+              <FolderOpen className="h-4 w-4" />
+              <span>下载记录</span>
             </TabsTrigger>
           </TabsList>
 
@@ -584,22 +637,42 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
 
                   {/* 搜索模式切换 */}
                   <div className="p-4 bg-slate-50 rounded-lg">
-                    <div className="flex items-center gap-4">
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="weighted-search"
+                            checked={useWeightedSearch}
+                            onChange={(e) => setUseWeightedSearch(e.target.checked)}
+                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                          <label htmlFor="weighted-search" className="text-sm font-medium text-slate-700">
+                            启用多维度加权搜索
+                          </label>
+                        </div>
+                        <div className="flex items-center space-x-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-md">
+                          <Zap className="h-3 w-3" />
+                          <span className="text-xs font-medium">7维度权重分析</span>
+                        </div>
+                      </div>
+                      
+                      {/* 已下载图片过滤选项 */}
                       <div className="flex items-center space-x-2">
                         <input
                           type="checkbox"
-                          id="weighted-search"
-                          checked={useWeightedSearch}
-                          onChange={(e) => setUseWeightedSearch(e.target.checked)}
-                          className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                          id="filter-downloaded"
+                          checked={showDownloadedFilter}
+                          onChange={(e) => setShowDownloadedFilter(e.target.checked)}
+                          className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500"
                         />
-                        <label htmlFor="weighted-search" className="text-sm font-medium text-slate-700">
-                          启用多维度加权搜索
+                        <label htmlFor="filter-downloaded" className="text-sm font-medium text-slate-700">
+                          自动过滤已下载图片
                         </label>
-                      </div>
-                      <div className="flex items-center space-x-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-md">
-                        <Zap className="h-3 w-3" />
-                        <span className="text-xs font-medium">7维度权重分析</span>
+                        <div className="flex items-center space-x-1 px-2 py-1 bg-green-100 text-green-700 rounded-md">
+                          <FolderOpen className="h-3 w-3" />
+                          <span className="text-xs font-medium">避免重复素材</span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -884,15 +957,15 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
                         // 统一结果格式
                         const match = useWeightedSearch 
                           ? {
-                              id: result.id,  // 已经是 string 类型
-                              filename: result.title || `插图_${result.id}`,
+                              id: (result as WeightedSearchResult).id,
+                              filename: (result as WeightedSearchResult).title || `插图_${(result as WeightedSearchResult).id}`,
                               bookTitle: '', // 加权搜索结果中暂无书名
-                              // 修复：API返回的数据字段位置颠倒了
-                              description: result.image_url || '暂无描述',  // 实际包含描述文字
-                              imageUrl: result.original_description || '',  // 实际包含图片URL
-                              similarity: result.final_score || 0,
+                              // 数据库字段是正确的，直接使用
+                              description: (result as WeightedSearchResult).original_description || '暂无描述',
+                              imageUrl: (result as WeightedSearchResult).image_url || '',
+                              similarity: (result as WeightedSearchResult).final_score || 0,
                               metadata: {
-                                bookTheme: result.theme_philosophy || '',
+                                bookTheme: (result as WeightedSearchResult).theme_philosophy || '',
                                 keywords: []
                               }
                             }
@@ -917,7 +990,15 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
                                         #{index + 1}
                                       </span>
                                       <div>
-                                        <h4 className="font-semibold text-slate-900 text-lg">{match.filename}</h4>
+                                        <h4 className="font-semibold text-slate-900 text-lg flex items-center space-x-2">
+                                          <span>{match.filename}</span>
+                                          {downloadedImages.has(match.filename) && (
+                                            <div className="flex items-center space-x-1 px-2 py-1 bg-orange-100 text-orange-700 rounded-md">
+                                              <FolderOpen className="h-3 w-3" />
+                                              <span className="text-xs font-medium">已下载</span>
+                                            </div>
+                                          )}
+                                        </h4>
                                         {match.bookTitle && (
                                           <p className="text-sm text-slate-600">📚 来源：{match.bookTitle}</p>
                                         )}
@@ -975,10 +1056,10 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
                                          // 如果没有段落分割，尝试按句号分段（每段不超过200字符）
                                          if (paragraphs.length === 1 && paragraphs[0].length > 200) {
                                            const sentences = paragraphs[0].split(/[。！？]/);
-                                           const newParagraphs = [];
+                                           const newParagraphs: string[] = [];
                                            let currentParagraph = '';
                                            
-                                           sentences.forEach((sentence, idx) => {
+                                           sentences.forEach((sentence: string, idx: number) => {
                                              if (sentence.trim()) {
                                                const punct = idx < sentences.length - 1 && sentences[idx + 1] ? 
                                                  (paragraphs[0].charAt(paragraphs[0].indexOf(sentence) + sentence.length)) : '';
@@ -994,7 +1075,7 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
                                              }
                                            });
                                            
-                                           return newParagraphs.map((paragraph, index) => (
+                                           return newParagraphs.map((paragraph: string, index: number) => (
                                              <p key={index} className="mb-2 last:mb-0">
                                                {paragraph}
                                              </p>
@@ -1030,7 +1111,12 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
                                         <Button
                                           variant="outline"
                                           size="sm"
-                                          onClick={() => handleDownloadImage(match.imageUrl!, match.filename)}
+                                          onClick={() => handleDownloadImage(
+                                            match.imageUrl!, 
+                                            match.filename,
+                                            match.bookTitle,
+                                            match.description
+                                          )}
                                           className="flex items-center space-x-2"
                                         >
                                           <Download className="h-4 w-4" />
@@ -1283,6 +1369,23 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
                       <span>打开插图库</span>
                     </Button>
                   </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* 下载记录标签页 */}
+          <TabsContent value="downloads">
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>下载记录</CardTitle>
+                  <CardDescription>
+                    查看您已下载的插图列表
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <DownloadLibraryViewer />
                 </CardContent>
               </Card>
             </div>

@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Input } from './ui/input';
 import { fetchDatabaseRecordsPaginated, getDatabaseStats, deleteDatabaseRecord, DatabaseRecord, PaginatedResult } from '../api/supabaseClient';
 import { cn } from '../lib/utils';
+import { recordImageDownload } from '../api/download-library-api';
 
 interface ModernDatabaseViewerProps {
   isOpen: boolean;
@@ -22,7 +23,7 @@ const ModernDatabaseViewer: React.FC<ModernDatabaseViewerProps> = ({ isOpen, onC
   const [stats, setStats] = useState<{ total: number; recentCount: number } | null>(null);
   const [searchInput, setSearchInput] = useState(''); // 新增：搜索输入框的值
   const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
-  const [selectedImage, setSelectedImage] = useState<{ url: string; filename: string } | null>(null);
+  const [selectedImage, setSelectedImage] = useState<{ url: string; filename: string; bookTitle?: string; description?: string } | null>(null);
   const [deletingRecord, setDeletingRecord] = useState<string | null>(null); // 正在删除的记录ID
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null); // 确认删除的记录ID
 
@@ -101,9 +102,9 @@ const ModernDatabaseViewer: React.FC<ModernDatabaseViewerProps> = ({ isOpen, onC
     });
   };
 
-  // 处理插图放大
-  const handleImageClick = (url: string, filename: string) => {
-    setSelectedImage({ url, filename });
+  // 处理插图点击
+  const handleImageClick = (url: string, filename: string, bookTitle?: string, description?: string) => {
+    setSelectedImage({ url, filename, bookTitle, description });
   };
 
   // 关闭插图放大
@@ -112,7 +113,7 @@ const ModernDatabaseViewer: React.FC<ModernDatabaseViewerProps> = ({ isOpen, onC
   };
 
   // 下载插图
-  const downloadImage = async (url: string, filename: string) => {
+  const downloadImage = async (url: string, filename: string, bookTitle?: string, description?: string) => {
     try {
       const response = await fetch(url);
       const blob = await response.blob();
@@ -124,6 +125,9 @@ const ModernDatabaseViewer: React.FC<ModernDatabaseViewerProps> = ({ isOpen, onC
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(downloadUrl);
+      
+      // 记录下载
+      await recordImageDownload(filename, url, bookTitle, description);
     } catch (error) {
       console.error('下载插图失败:', error);
     }
@@ -345,7 +349,7 @@ const ModernDatabaseViewer: React.FC<ModernDatabaseViewerProps> = ({ isOpen, onC
                               alt={record.filename}
                               className="w-full h-full object-cover cursor-pointer transition-transform duration-200 group-hover:scale-105"
                               loading="lazy"
-                              onClick={() => handleImageClick(record.image_url!, record.filename)}
+                              onClick={() => handleImageClick(record.image_url!, record.filename, record.book_title, record.original_description)}
                               onError={(e) => {
                                 // 插图加载失败时隐藏插图
                                 (e.target as HTMLImageElement).style.display = 'none';
@@ -360,7 +364,7 @@ const ModernDatabaseViewer: React.FC<ModernDatabaseViewerProps> = ({ isOpen, onC
                                   className="h-8 w-8 p-0 bg-white/90 hover:bg-white"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    handleImageClick(record.image_url!, record.filename);
+                                    handleImageClick(record.image_url!, record.filename, record.book_title, record.original_description);
                                   }}
                                 >
                                   <Maximize2 className="h-4 w-4 text-gray-700" />
@@ -371,7 +375,7 @@ const ModernDatabaseViewer: React.FC<ModernDatabaseViewerProps> = ({ isOpen, onC
                                   className="h-8 w-8 p-0 bg-white/90 hover:bg-white"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    downloadImage(record.image_url!, record.filename);
+                                    downloadImage(record.image_url!, record.filename, record.book_title, record.original_description);
                                   }}
                                 >
                                   <Download className="h-4 w-4 text-gray-700" />
@@ -436,7 +440,7 @@ const ModernDatabaseViewer: React.FC<ModernDatabaseViewerProps> = ({ isOpen, onC
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => downloadImage(selectedImage.url, selectedImage.filename)}
+                  onClick={() => downloadImage(selectedImage.url, selectedImage.filename, selectedImage.bookTitle, selectedImage.description)}
                   className="flex items-center space-x-2"
                 >
                   <Download className="h-4 w-4" />
