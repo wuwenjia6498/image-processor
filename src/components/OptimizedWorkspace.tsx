@@ -37,6 +37,7 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
   const [searchWeights, setSearchWeights] = useState<SearchWeights>(WEIGHT_PRESETS.reading_wisdom);
   const [showWeightSettings, setShowWeightSettings] = useState(false);
   const [selectedPreset, setSelectedPreset] = useState<keyof typeof WEIGHT_PRESETS>('reading_wisdom');
+  const [hasUserSelectedPreset, setHasUserSelectedPreset] = useState(false); // 跟踪用户是否手动选择过
   
   // 已下载图片过滤状态
   const [downloadedImages, setDownloadedImages] = useState<Set<string>>(new Set());
@@ -123,7 +124,6 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
 
   // 插图上传处理
   const handleImagesUploaded = useCallback(async (images: File[]) => {
-    console.log('上传的插图:', images);
     
     setIsProcessing(true);
     setProgress(0);
@@ -210,7 +210,6 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
       }));
       
     } catch (error) {
-      console.error('处理插图时出错:', error);
       const errorMessage = error instanceof Error ? error.message : '未知错误';
       
       // 根据错误类型提供更具体的提示
@@ -251,6 +250,27 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
       if (useWeightedSearch) {
         // 使用加权搜索
         const embedding = await vectorizeText(textContent);
+        
+        // 获取智能推荐并自动应用（如果用户没有手动选择过）
+        const recommendation = await import('../api/search-quality-monitor').then(m => 
+          m.recommendOptimalWeights(textContent)
+        );
+        
+        let finalWeights = searchWeights;
+        let finalPreset = selectedPreset;
+        
+        // 如果当前是默认状态且智能推荐与默认不同，自动应用推荐
+        if (!hasUserSelectedPreset && recommendation.preset !== selectedPreset) {
+          finalWeights = recommendation.weights;
+          finalPreset = recommendation.preset;
+          
+          // 更新状态以反映智能推荐的应用（但不标记为用户手动选择）
+          setSearchWeights(recommendation.weights);
+          setSelectedPreset(recommendation.preset);
+          
+          console.log(`🤖 自动应用智能推荐: ${recommendation.preset} - ${recommendation.reason}`);
+        }
+        
         const targetCount = 5; // 目标显示数量
         let allResults: WeightedSearchResult[] = [];
         let batchSize = 10; // 每次获取的数量
@@ -259,9 +279,7 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
         
         while (allResults.length < targetCount && attempt < maxAttempts) {
           attempt++;
-          const batchResults = await performWeightedSearch(embedding, searchWeights, batchSize * attempt, textContent);
-          
-          console.log(`🔍 第${attempt}次搜索，获取结果数量: ${batchResults.length}`);
+          const batchResults = await performWeightedSearch(embedding, finalWeights, batchSize * attempt, textContent);
           
           if (showDownloadedFilter && batchResults.length > 0) {
             // 检查哪些图片已被下载
@@ -269,12 +287,8 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
             const downloaded = await checkMultipleImagesDownloaded(filenames);
             setDownloadedImages(downloaded);
             
-            console.log(`🔍 检查到已下载的图片: ${Array.from(downloaded).join(', ')}`);
-            
             // 过滤已下载的图片
             const filteredResults = batchResults.filter(r => !downloaded.has(r.title));
-            console.log(`🔍 过滤前: ${batchResults.length}张, 已下载: ${downloaded.size}张, 过滤后: ${filteredResults.length}张`);
-            
             allResults = filteredResults.slice(0, targetCount); // 只取前targetCount个结果
           } else {
             allResults = batchResults.slice(0, targetCount);
@@ -282,39 +296,56 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
           
           // 如果没有更多结果可获取，就停止尝试
           if (batchResults.length < batchSize * attempt) {
-            console.log(`🔍 已获取所有可用结果，停止搜索`);
             break;
           }
         }
         
-        console.log(`🔍 最终返回结果数量: ${allResults.length}`);
         weightedResults = allResults;
         setWeightedResults(weightedResults);
       } else {
         // 使用传统匹配
-        const textContentObj: TextContent = { content: textContent };
-        results = await matchIllustrationsToText(textContentObj);
+        const targetCount = 5; // 目标显示数量
+        let allResults: IllustrationMatch[] = [];
+        let batchSize = 10; // 每次获取的数量
+        let maxAttempts = 5; // 最大尝试次数，避免无限循环
+        let attempt = 0;
         
-        // 检查传统搜索结果中哪些图片已被下载
-        if (showDownloadedFilter && results.length > 0) {
-          const filenames = results.map(r => r.filename);
-          const downloaded = await checkMultipleImagesDownloaded(filenames);
-          setDownloadedImages(downloaded);
+        while (allResults.length < targetCount && attempt < maxAttempts) {
+          attempt++;
           
-          // 过滤已下载的图片
-          results = results.filter(r => !downloaded.has(r.filename));
+          // 获取更多结果（每次增加获取数量）
+          const textContentObj: TextContent = { content: textContent };
+          const batchResults = await matchIllustrationsToText(textContentObj, batchSize * attempt);
+          
+          if (showDownloadedFilter && batchResults.length > 0) {
+            // 检查哪些图片已被下载
+            const filenames = batchResults.map(r => r.filename);
+            const downloaded = await checkMultipleImagesDownloaded(filenames);
+            setDownloadedImages(downloaded);
+            
+            // 过滤已下载的图片
+            const filteredResults = batchResults.filter(r => !downloaded.has(r.filename));
+            allResults = filteredResults.slice(0, targetCount); // 只取前targetCount个结果
+          } else {
+            allResults = batchResults.slice(0, targetCount);
+          }
+          
+          // 如果没有更多结果可获取，就停止尝试
+          if (batchResults.length < batchSize * attempt) {
+            break;
+          }
         }
         
+        results = allResults;
         setMatchResults(results);
       }
       
     } catch (error) {
-      console.error('文案匹配失败:', error);
       setMatchError(error instanceof Error ? error.message : '匹配失败，请重试');
     } finally {
       setIsMatching(false);
     }
-  }, [textContent, useWeightedSearch, searchWeights, showDownloadedFilter]);
+  }, [textContent, useWeightedSearch, searchWeights, showDownloadedFilter, hasUserSelectedPreset, selectedPreset]);
 
   // 权重更新处理
   const handleWeightChange = useCallback((dimension: keyof SearchWeights, value: number) => {
@@ -323,12 +354,14 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
       [dimension]: value / 100 // 转换为0-1范围
     }));
     setSelectedPreset('custom'); // 手动调整后切换到自定义模式
+    setHasUserSelectedPreset(true); // 手动调整也算用户选择
   }, []);
 
   // 预设模板选择
   const handlePresetChange = useCallback((preset: keyof typeof WEIGHT_PRESETS) => {
     setSelectedPreset(preset);
     setSearchWeights(WEIGHT_PRESETS[preset]);
+    setHasUserSelectedPreset(true); // 手动选择过
   }, []);
 
   // 重置权重（如果是自定义模式则重置为平衡分配，否则重置为当前选择的模板）
@@ -548,6 +581,15 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
               >
                 <Brain className="h-4 w-4" />
                 <span>使用指南</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open('./download-guide.html', '_blank')}
+                className="flex items-center space-x-2 bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+              >
+                <FolderOpen className="h-4 w-4" />
+                <span>下载记录说明</span>
               </Button>
             </div>
           </div>

@@ -31,14 +31,16 @@ export async function recordImageDownload(
   tags: string[] = []
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    
     // 检查是否已存在该图片
     const { data: existing, error: checkError } = await supabase
       .from('material_library')
       .select('*')
       .eq('filename', filename)
-      .single();
+      .maybeSingle(); // 使用 maybeSingle() 替代 single() 来避免错误
 
-    if (checkError && checkError.code !== 'PGRST116') {
+    if (checkError) {
+      console.error('检查现有记录时出错:', checkError);
       throw checkError;
     }
 
@@ -146,17 +148,23 @@ export async function checkIfImageDownloaded(filename: string): Promise<boolean>
 export async function checkMultipleImagesDownloaded(filenames: string[]): Promise<Set<string>> {
   try {
     if (filenames.length === 0) return new Set();
-
+    
     const { data, error } = await supabase
       .from('material_library')
       .select('filename')
       .in('filename', filenames);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase查询错误:', error);
+      throw error;
+    }
 
-    return new Set(data?.map(item => item.filename) || []);
+    const downloadedFilenames = new Set(data?.map(item => item.filename) || []);
+    
+    return downloadedFilenames;
   } catch (error) {
     console.error('批量检查图片下载状态失败:', error);
+    // 发生错误时返回空集合，不影响搜索功能
     return new Set();
   }
 }
