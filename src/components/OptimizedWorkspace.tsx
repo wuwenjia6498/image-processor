@@ -271,7 +271,7 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
           console.log(`🤖 自动应用智能推荐: ${recommendation.preset} - ${recommendation.reason}`);
         }
         
-        const targetCount = 5; // 目标显示数量
+        const targetCount = 10; // 目标显示数量
         let allResults: WeightedSearchResult[] = [];
         let batchSize = 10; // 每次获取的数量
         let maxAttempts = 5; // 最大尝试次数，避免无限循环
@@ -304,7 +304,7 @@ const OptimizedWorkspace: React.FC<OptimizedWorkspaceProps> = () => {
         setWeightedResults(weightedResults);
       } else {
         // 使用传统匹配
-        const targetCount = 5; // 目标显示数量
+        const targetCount = 10; // 目标显示数量
         let allResults: IllustrationMatch[] = [];
         let batchSize = 10; // 每次获取的数量
         let maxAttempts = 5; // 最大尝试次数，避免无限循环
